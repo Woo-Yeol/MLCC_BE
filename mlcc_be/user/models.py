@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
 # Create your models here.
 
@@ -34,11 +34,12 @@ class UserManager(BaseUserManager):
             name=name
         )
         user.is_admin = True
+        user.is_superuser = True
         user.save(using=self._db)
         return user
 
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser,PermissionsMixin):
     id = models.CharField(max_length=64, unique=True, primary_key=True)
     email = models.EmailField(default='', max_length=100)
     name = models.CharField(max_length=30)
@@ -47,6 +48,7 @@ class User(AbstractBaseUser):
     # User 모델의 필수 field
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
 
     # 헬퍼 클래스 사용
     objects = UserManager()
