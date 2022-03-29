@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     'rest_framework',
     #user
     'user.apps.UserConfig',
+    #valdata
+    'valdata.apps.UserConfig',
 ]
 
 MIDDLEWARE = [
