@@ -9,6 +9,7 @@ class Margin(models.Model):
     Bbox = models.ForeignKey("Bbox", on_delete=models.CASCADE, db_column="bbox")
     real_margin = models.IntegerField()
     margin_ratio = models.IntegerField()
+
 class Box_segmentation(models.Model):
     segmentation_name = models.CharField(max_length=50, primary_key=True)
     Bbox = models.ForeignKey("Bbox", on_delete=models.CASCADE, db_column="bbox")
@@ -46,7 +47,7 @@ class Data(models.Model):
     # annotations = models.ManyToManyField(Anotations, related_name='anotations')
 
     def __str__(self):
-        return self.name
+        return self.img_name
 
 
 
