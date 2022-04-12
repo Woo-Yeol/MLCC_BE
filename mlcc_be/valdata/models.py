@@ -2,37 +2,49 @@ from __future__ import annotations
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+def data_directory_path(instance, filename):
+    return 'data/{0}/{1}'.format(instance.name, filename)
+
 # Create your models here.
-class Margin(models.Model):
-    margin_num = models.CharField(max_length=50, primary_key=True)
-    bbox_name = models.ForeignKey("Bbox", on_delete=models.CASCADE, db_column="bbox")
-    margin_x = models.IntegerField()
-    real_margin = models.FloatField()
-    margin_ratio = models.FloatField()
-    margin_width = models.FloatField()
-    cut_off = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(5)])
-    
-
-class Bbox(models.Model):
-    name = models.CharField(max_length=50, primary_key=True)
-    data_name = models.ForeignKey("Data", on_delete=models.CASCADE, db_column="data")
-    min_margn_ratio = models.FloatField()
-    box_min_x = models.IntegerField()
-    box_min_y = models.IntegerField()
-    box_width = models.IntegerField()
-    box_height = models.IntegerField()
-
-    def __str__(self):
-        return self.box_name
 
 
 class Data(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
-    original_image = models.ImageField(upload_to='')
-    original_image = models.ImageField(upload_to='')
+    original_image = models.ImageField(upload_to=data_directory_path, null=True, blank=True)
+    segmentation_image = models.ImageField(upload_to=data_directory_path, null=True, blank=True)
+    # bbox = models.ManyToManyField(Bbox, related_name='data', blank=True)
 
     def __str__(self):
-        return self.img_name
+        return self.name
+
+
+
+class Bbox(models.Model):
+    name = models.CharField(max_length=50, primary_key=True)
+    data = models.ForeignKey(Data, on_delete=models.CASCADE, related_name='datas', db_column="data" ,null=True)
+    min_margn_ratio = models.FloatField(null=True, blank=True)
+    box_center_x = models.IntegerField(null=True, blank=True)
+    box_center_y = models.IntegerField(null=True, blank=True)
+    box_width = models.IntegerField(null=True, blank=True)
+    box_height = models.IntegerField(null=True, blank=True)
+    # margin = models.ManyToManyField(Margin, related_name='bbox', blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Margin(models.Model):
+    margin_num = models.CharField(max_length=50, primary_key=True)
+    bbox = models.ForeignKey(Bbox, on_delete=models.CASCADE, related_name='bboxs', db_column="bbox",null=True)
+    margin_x = models.IntegerField(null=True, blank=True)
+    real_margin = models.FloatField(null=True, blank=True)
+    margin_ratio = models.FloatField(null=True, blank=True)
+    margin_width = models.FloatField(null=True, blank=True)
+    cut_off = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(5)], null=True, blank=True)
+
+    def __str__(self):
+        return self.margin_num
+    
 
 
 
