@@ -17,8 +17,8 @@ class Bbox(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
     data_name = models.ForeignKey("Data", on_delete=models.CASCADE, db_column="data")
     min_margn_ratio = models.FloatField()
-    box_min_x = models.IntegerField()
-    box_min_y = models.IntegerField()
+    box_center_x = models.IntegerField()
+    box_center_y = models.IntegerField()
     box_width = models.IntegerField()
     box_height = models.IntegerField()
 
@@ -29,7 +29,7 @@ class Bbox(models.Model):
 class Data(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
     original_image = models.ImageField(upload_to='')
-    original_image = models.ImageField(upload_to='')
+    segmentation_image = models.ImageField(upload_to='')
 
     def __str__(self):
         return self.img_name
