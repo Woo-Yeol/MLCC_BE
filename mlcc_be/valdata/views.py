@@ -31,6 +31,7 @@ class BboxListView(ListAPIView):
 class BboxRetrieveView(RetrieveAPIView):
     queryset = Bbox.objects.all()
     serializer_class = BboxSerializer
+    lookup_fields = ['data']
 
 
 # Margin
@@ -41,3 +42,4 @@ class MarginListView(ListAPIView):
 class MarginRetrieveView(RetrieveAPIView):
     queryset = Margin.objects.all()
     serializer_class = MarginSerializer
+    lookup_fields = ['bbox']
