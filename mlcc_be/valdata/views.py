@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework.generics import ListAPIView,RetrieveAPIView
+from rest_framework.generics import ListCreateAPIView,RetrieveUpdateDestroyAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -9,37 +9,30 @@ from .serializers import DataSerializer, BboxSerializer, MarginSerializer
 
 
 # Data
-class DataListView(ListAPIView):
+class DataListView(ListCreateAPIView):
     queryset = Data.objects.all()
     serializer_class = DataSerializer
 
-# class DataListView(APIView):
-#     def get(self, request):
-#         object = Data.objects.all()
-#         serializer = DataSerializer(object, many=True)
-#         return Response(serializer.data)
-
-class DataRetrieveView(RetrieveAPIView):
+class DataRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Data.objects.all()
     serializer_class = DataSerializer
 
 # Bbox
-class BboxListView(ListAPIView):
+class BboxListView(ListCreateAPIView):
     queryset = Bbox.objects.all()
     serializer_class = BboxSerializer
 
-class BboxRetrieveView(RetrieveAPIView):
+class BboxRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Bbox.objects.all()
     serializer_class = BboxSerializer
-    lookup_fields = ['data']
-
+    # lookup_fields = ['data']
 
 # Margin
-class MarginListView(ListAPIView):
+class MarginListView(ListCreateAPIView):
     queryset = Margin.objects.all()
     serializer_class = MarginSerializer
 
-class MarginRetrieveView(RetrieveAPIView):
+class MarginRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Margin.objects.all()
     serializer_class = MarginSerializer
-    lookup_fields = ['bbox']
+    # lookup_fields = ['bbox']
