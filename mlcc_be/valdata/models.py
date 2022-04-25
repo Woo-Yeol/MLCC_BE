@@ -1,6 +1,7 @@
 from __future__ import annotations
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils.timezone import now
 
 def data_directory_path(instance, filename):
     return 'data/{0}/{1}'.format(instance.name, filename)
@@ -12,6 +13,8 @@ class Data(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
     original_image = models.ImageField(upload_to=data_directory_path, null=True, blank=True)
     segmentation_image = models.ImageField(upload_to=data_directory_path, null=True, blank=True)
+    margin_ratio = models.FloatField(null=True, blank=True)
+    created_date = models.DateField(auto_now_add=True)
     # bbox = models.ManyToManyField(Bbox, related_name='data', blank=True)
 
     def __str__(self):

@@ -18,6 +18,5 @@ from .views import UserCreate, signin
 
 urlpatterns = [
     path('signup/', UserCreate.as_view()),
-    path('signin/', signin),
-    path('api-auth/', include('rest_framework.urls'))
+    path('signin/', signin)
 ]
