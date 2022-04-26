@@ -3,6 +3,9 @@ from django.shortcuts import get_object_or_404 as _get_object_or_404
 from django.core.exceptions import ValidationError
 from django.http import Http404
 
+from django.shortcuts import render
+from rest_framework.generics import ListCreateAPIView,RetrieveUpdateDestroyAPIView
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from asgiref.sync import sync_to_async
@@ -173,25 +176,30 @@ class DataListView(ListAPIView):
     queryset = Data.objects.all()
     serializer_class = DataSerializer
 
-class DataRetrieveView(RetrieveAPIView):
+# class DataListView(ListCreateAPIView):
+#     queryset = Data.objects.all()
+#     serializer_class = DataSerializer
+
+class DataRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Data.objects.all()
     serializer_class = DataSerializer
 
 # Bbox
-class BboxListView(ListAPIView):
+class BboxListView(ListCreateAPIView):
     queryset = Bbox.objects.all()
     serializer_class = BboxSerializer
 
-class BboxRetrieveView(RetrieveAPIView):
+class BboxRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Bbox.objects.all()
     serializer_class = BboxSerializer
-
+    # lookup_fields = ['data']
 
 # Margin
-class MarginListView(ListAPIView):
+class MarginListView(ListCreateAPIView):
     queryset = Margin.objects.all()
     serializer_class = MarginSerializer
 
-class MarginRetrieveView(RetrieveAPIView):
+class MarginRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Margin.objects.all()
     serializer_class = MarginSerializer
+    # lookup_fields = ['bbox']
