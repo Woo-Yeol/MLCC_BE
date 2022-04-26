@@ -35,18 +35,16 @@ def main(request):
     if threshold is not None:
         # SELECT ... WHERE margin_ratio >= threshold
         normal = queryset.filter(margin_ratio__gte=threshold)
-        print(normal)
         # SELECT ... WHERE margin_ratio < threshold
         error = queryset.filter(margin_ratio__lt=threshold)
-        normal = DataSerializer(normal).data    
-        error = DataSerializer(error).data    
+        normal = DataSerializer(normal,many=True).data    
+        error = DataSerializer(error,many=True).data
         result = {
             "Normal" : normal,
             "Error" : error
         }
     else:
-        result = DataSerializer(queryset).data    
-    print(result)
+        result = DataSerializer(queryset,many=True).data    
     return Response(result)
 
 class NormalListView(ListAPIView):
