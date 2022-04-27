@@ -1,20 +1,22 @@
-from rest_framework.generics import ListAPIView,RetrieveAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from django.shortcuts import get_object_or_404 as _get_object_or_404
 from django.core.exceptions import ValidationError
 from django.http import Http404
 
 from django.shortcuts import render
-from rest_framework.generics import ListCreateAPIView,RetrieveUpdateDestroyAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from asgiref.sync import sync_to_async
 
+import datetime
 from django.db.models import Avg
 
 from .models import Data, Bbox, Margin
 from .serializers import DataSerializer, BboxSerializer, MarginSerializer
 # Create your views here.
+
 
 def get_object_or_404(queryset, *filter_args, **filter_kwargs):
     """
@@ -27,143 +29,51 @@ def get_object_or_404(queryset, *filter_args, **filter_kwargs):
         raise Http404
 
 # Main Page
+
+
 @sync_to_async
 @api_view(['GET'])
 def main(request):
     queryset = Data.objects.all()
     threshold = request.query_params.get('threshold')
+    period = request.query_params.get('period')
+    cutoff = request.query_params.get('cutoff')
+    if period is not None:
+        from_date, to_date = period.split('~')
+        from_date = list(map(int, from_date.split('.')))
+        to_date = list(map(int, to_date.split('.')))
+        queryset = queryset.filter(
+            created_date__range=[datetime.date(from_date[0], from_date[1], from_date[2]), datetime.date(to_date[0], to_date[1], to_date[2])])
     if threshold is not None:
         # SELECT ... WHERE margin_ratio >= threshold
         normal = queryset.filter(margin_ratio__gte=threshold)
         # SELECT ... WHERE margin_ratio < threshold
         error = queryset.filter(margin_ratio__lt=threshold)
-        normal = DataSerializer(normal,many=True).data    
-        error = DataSerializer(error,many=True).data
+        normal = DataSerializer(normal, many=True, context={
+                                'request': request}).data
+        error = DataSerializer(error, many=True, context={
+                               'request': request}).data
         result = {
-            "Normal" : normal,
-            "Error" : error
+            "Normal": normal,
+            "Error": error
         }
     else:
-        result = DataSerializer(queryset,many=True).data    
+        result = DataSerializer(queryset, many=True, context={
+                                'request': request}).data
     return Response(result)
 
-class NormalListView(ListAPIView):
-    serializer_class = DataSerializer
+# Detail
 
-    def get_object(self):
-        """
-        Returns the object the view is displaying.
 
-        You may want to override this if you need to provide non-standard
-        queryset lookups.  Eg if objects are referenced using multiple
-        keyword arguments in the url conf.
-        """
-        queryset = self.filter_queryset(self.get_queryset())
-
-        # Perform the lookup filtering.
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-
-        assert lookup_url_kwarg in self.kwargs, (
-            'Expected view %s to be called with a URL keyword argument '
-            'named "%s". Fix your URL conf, or set the `.lookup_field` '
-            'attribute on the view correctly.' %
-            (self.__class__.__name__, lookup_url_kwarg)
-        )
-
-        filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        obj = get_object_or_404(queryset, **filter_kwargs)
-
-        # May raise a permission denied
-        self.check_object_permissions(self.request, obj)
-        print(obj)
-        return obj
-
-    def get_queryset(self): 
-        queryset = Data.objects.all()
-        threshold = self.request.query_params.get('threshold')
-        if threshold is not None:
-            # SELECT ... WHERE margin_ratio >= threshold
-            queryset = queryset.filter(margin_ratio__gte=threshold)
-            
-        return queryset
+# @sync_to_async
+# @api_view(['GET'])
+# def detail(request):
 
 # Data
+
+
 class DataListView(ListAPIView):
-    # queryset = Data.objects.all()
-    def get_object(self):
-        """
-        Returns the object the view is displaying.
-
-        You may want to override this if you need to provide non-standard
-        queryset lookups.  Eg if objects are referenced using multiple
-        keyword arguments in the url conf.
-        """
-        if self.request.query_params.get('threshold') is None:
-            queryset = self.filter_queryset(self.get_queryset())
-
-            # Perform the lookup filtering.
-            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-
-            assert lookup_url_kwarg in self.kwargs, (
-                'Expected view %s to be called with a URL keyword argument '
-                'named "%s". Fix your URL conf, or set the `.lookup_field` '
-                'attribute on the view correctly.' %
-                (self.__class__.__name__, lookup_url_kwarg)
-            )
-
-            filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-            obj = get_object_or_404(queryset, **filter_kwargs)
-
-            # May raise a permission denied
-            self.check_object_permissions(self.request, obj)
-            return obj
-        else:
-            # Normal Object
-            queryset = self.filter_queryset(self.get_normal_queryset())
-
-            # Perform the lookup filtering.
-            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-
-            assert lookup_url_kwarg in self.kwargs, (
-                'Expected view %s to be called with a URL keyword argument '
-                'named "%s". Fix your URL conf, or set the `.lookup_field` '
-                'attribute on the view correctly.' %
-                (self.__class__.__name__, lookup_url_kwarg)
-            )
-
-            filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-            normal = get_object_or_404(queryset, **filter_kwargs)
-
-            # May raise a permission denied
-            self.check_object_permissions(self.request, normal)
-
-            # Error Object
-            queryset = self.filter_queryset(self.get_error_queryset())
-
-            # Perform the lookup filtering.
-            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-
-            assert lookup_url_kwarg in self.kwargs, (
-                'Expected view %s to be called with a URL keyword argument '
-                'named "%s". Fix your URL conf, or set the `.lookup_field` '
-                'attribute on the view correctly.' %
-                (self.__class__.__name__, lookup_url_kwarg)
-            )
-
-            filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-            error = get_object_or_404(queryset, **filter_kwargs)
-
-            # May raise a permission denied
-            self.check_object_permissions(self.request, error)
-
-            obj = {
-                'Normal': dict(normal),
-                'Error': dict(error)
-            }
-
-            return obj
-
-    def get_normal_queryset(self): 
+    def get_normal_queryset(self):
         queryset = Data.objects.all()
         threshold = self.request.query_params.get('threshold')
         if threshold is not None:
@@ -178,14 +88,18 @@ class DataListView(ListAPIView):
 #     queryset = Data.objects.all()
 #     serializer_class = DataSerializer
 
+
 class DataRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Data.objects.all()
     serializer_class = DataSerializer
 
 # Bbox
+
+
 class BboxListView(ListCreateAPIView):
     queryset = Bbox.objects.all()
     serializer_class = BboxSerializer
+
 
 class BboxRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Bbox.objects.all()
@@ -193,9 +107,12 @@ class BboxRetrieveView(RetrieveUpdateDestroyAPIView):
     # lookup_fields = ['data']
 
 # Margin
+
+
 class MarginListView(ListCreateAPIView):
     queryset = Margin.objects.all()
     serializer_class = MarginSerializer
+
 
 class MarginRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Margin.objects.all()
