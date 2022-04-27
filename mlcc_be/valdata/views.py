@@ -24,7 +24,7 @@ def main(request):
     period = request.query_params.get('period')
     cutoff = request.query_params.get('cutoff')
     if period is not None:
-        from_date, to_date = period.split('~', '-')
+        from_date, to_date = period.split('~')
         from_date = list(map(int, from_date.split('.')))
         to_date = list(map(int, to_date.split('.')))
         queryset = queryset.filter(
