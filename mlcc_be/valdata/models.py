@@ -3,6 +3,7 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.timezone import now
 
+
 def data_directory_path(instance, filename):
     return 'data/{0}/{1}'.format(instance.name, filename)
 
@@ -11,8 +12,10 @@ def data_directory_path(instance, filename):
 
 class Data(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
-    original_image = models.ImageField(upload_to=data_directory_path, null=True, blank=True)
-    segmentation_image = models.ImageField(upload_to=data_directory_path, null=True, blank=True)
+    original_image = models.ImageField(
+        upload_to=data_directory_path, null=True, blank=True)
+    segmentation_image = models.ImageField(
+        upload_to=data_directory_path, null=True, blank=True)
     margin_ratio = models.FloatField(null=True, blank=True)
     created_date = models.DateField(auto_now_add=True)
     # bbox = models.ManyToManyField(Bbox, related_name='data', blank=True)
@@ -21,11 +24,11 @@ class Data(models.Model):
         return self.name
 
 
-
 class Bbox(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
-    data = models.ForeignKey(Data, on_delete=models.CASCADE, related_name='datas',null=True)
-    min_margn_ratio = models.FloatField(null=True, blank=True)
+    data = models.ForeignKey(
+        Data, on_delete=models.CASCADE, related_name='datas', null=True)
+    min_margin_ratio = models.FloatField(null=True, blank=True)
     box_center_x = models.IntegerField(null=True, blank=True)
     box_center_y = models.IntegerField(null=True, blank=True)
     box_width = models.IntegerField(null=True, blank=True)
@@ -38,17 +41,14 @@ class Bbox(models.Model):
 
 class Margin(models.Model):
     margin_num = models.CharField(max_length=50, primary_key=True)
-    bbox = models.ForeignKey(Bbox, on_delete=models.CASCADE, related_name='bboxs',null=True)
+    bbox = models.ForeignKey(
+        Bbox, on_delete=models.CASCADE, related_name='bboxs', null=True)
     margin_x = models.IntegerField(null=True, blank=True)
     real_margin = models.FloatField(null=True, blank=True)
     margin_ratio = models.FloatField(null=True, blank=True)
     margin_width = models.FloatField(null=True, blank=True)
-    cut_off = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(5)], null=True, blank=True)
+    cut_off = models.IntegerField(validators=[MinValueValidator(
+        0), MaxValueValidator(5)], null=True, blank=True)
 
     def __str__(self):
         return self.margin_num
-    
-
-
-
-

@@ -3,7 +3,6 @@ from django.shortcuts import get_object_or_404 as _get_object_or_404
 from django.core.exceptions import ValidationError
 from django.http import Http404
 
-from django.shortcuts import render
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -15,23 +14,9 @@ from django.db.models import Avg
 
 from .models import Data, Bbox, Margin
 from .serializers import DataSerializer, BboxSerializer, MarginSerializer
-# Create your views here.
-
-
-def get_object_or_404(queryset, *filter_args, **filter_kwargs):
-    """
-    Same as Django's standard shortcut, but make sure to also raise 404
-    if the filter_kwargs don't match the required types.
-    """
-    try:
-        return _get_object_or_404(queryset, *filter_args, **filter_kwargs)
-    except (TypeError, ValueError, ValidationError):
-        raise Http404
-
 # Main Page
 
 
-@sync_to_async
 @api_view(['GET'])
 def main(request):
     queryset = Data.objects.all()
@@ -39,7 +24,7 @@ def main(request):
     period = request.query_params.get('period')
     cutoff = request.query_params.get('cutoff')
     if period is not None:
-        from_date, to_date = period.split('~')
+        from_date, to_date = period.split('~', '-')
         from_date = list(map(int, from_date.split('.')))
         to_date = list(map(int, to_date.split('.')))
         queryset = queryset.filter(
@@ -60,14 +45,48 @@ def main(request):
     else:
         result = DataSerializer(queryset, many=True, context={
                                 'request': request}).data
-    return Response(result)
+    return Response(result, headers={"description": "SUCCESS"})
 
 # Detail
 
 
-# @sync_to_async
-# @api_view(['GET'])
-# def detail(request):
+@api_view(['GET'])
+def detail(request, name):
+    box_name = request.query_params.get('box')
+    cut_off = request.query_params.get(
+        'cut-off') if request.query_params.get('cut-off') is not None else 0
+
+    if box_name is not None:
+        result = {}
+        margin = Margin.objects.all().filter(bbox=box_name, cut_off=cut_off)
+        margin = MarginSerializer(margin, many=True).data
+        for m in margin:
+            num = m['margin_num']
+            m.pop('cut_off')
+            m.pop('margin_num')
+            m.pop('bbox')
+            result[num] = m
+    else:
+        data = DataSerializer(Data.objects.get(name=name),
+                              context={'request': request}).data
+        bbox = BboxSerializer(
+            Bbox.objects.all().filter(data=name), many=True).data
+        ratio = {}
+        bbox_data = {}
+        for b in bbox:
+            name = b['name']
+            ratio[name] = b['min_margin_ratio']
+            b.pop('name')
+            b.pop('data')
+            b.pop('min_margin_ratio')
+            bbox_data[name] = b
+
+        result = {
+            "original_img": data['original_image'],
+            "Box": bbox_data,
+            "Ratio": ratio,
+        }
+    return Response(result, headers={"description": "SUCCESS"})
 
 # Data
 
