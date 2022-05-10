@@ -65,14 +65,13 @@ INSTALLED_APPS = [
 ############################################################################################################
 
 # CORS 권한 
-
-# CORS_ORIGIN_ALLOW_ALL = True # <- 모든 호스트 허용
+CORS_ALLOW_ALL_ORIGINS = True # <- 모든 호스트 허용
 
 # or 
-CORS_ORIGIN_WHITELIST = (
-    "http://localhost:3000",
-    "http://127.0.0.1:3000"
-)
+# CORS_ALLOWED_ORIGINS = [
+# "http://localhost:3000",
+# "http://127.0.0.1:3000"
+# ]
 
 # CORS_ALLOW_CREDENTIALS가 True인 경우, 쿠키가 cross-site HTTP 요청에 포함될 수 있다. 기본값은 False이다.
 CORS_ALLOW_CREDENTIALS = True
@@ -105,16 +104,16 @@ CORS_ALLOW_HEADERS = [
 ############################################################################################################
 
 MIDDLEWARE = [
+    # CORS
+    'corsheaders.middleware.CorsMiddleware', # <- 가능한 높게 위치시켜야 한다.
+    'django.middleware.common.CommonMiddleware',
     # Default
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # CORS
-    'corsheaders.middleware.CorsMiddleware', # <- 가능한 높게 위치시켜야 한다.
 ]
 
 REST_FRAMEWORK = {
