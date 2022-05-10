@@ -91,7 +91,7 @@ def detail(request, name):
 # Data
 
 
-class DataListView(ListAPIView):
+class DataListView(ListCreateAPIView):
     def get_normal_queryset(self):
         queryset = Data.objects.all()
         threshold = self.request.query_params.get('threshold')
