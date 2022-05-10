@@ -36,11 +36,25 @@ MLCC 적층 얼라인먼트 검사 시스템
 
 #### Migration
 ```
-    $ python manage.py makemigrations
-    $ python manage.py migrate
+    $ sh migrate.sh
 ```
 
 #### Run Server
 ```
     $ python manage.py runserver
+```
+
+### After Pull
+
+#### Reset Migration
+- Error 발생시
+```
+    $ rm ./db.sqlite3
+    $ sh reset_migration.sh
+    $ sh migrate.sh
+```
+
+#### 종속성 업데이트
+```
+    $ pip install -r requirements.txt
 ```
