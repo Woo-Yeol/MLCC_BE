@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from asgiref.sync import sync_to_async
 
-import datetime
+from datetime import datetime,timedelta
 from django.db.models import Avg
 
 from .models import Data, Bbox, Margin
@@ -22,29 +22,30 @@ def main(request):
     queryset = Data.objects.all()
     threshold = request.query_params.get('threshold')
     period = request.query_params.get('period')
-    cutoff = request.query_params.get('cutoff')
     if period is not None:
         from_date, to_date = period.split('~')
         from_date = list(map(int, from_date.split('.')))
         to_date = list(map(int, to_date.split('.')))
         queryset = queryset.filter(
             created_date__range=[datetime.date(from_date[0], from_date[1], from_date[2]), datetime.date(to_date[0], to_date[1], to_date[2])])
-    if threshold is not None:
-        # SELECT ... WHERE margin_ratio >= threshold
-        normal = queryset.filter(margin_ratio__gte=threshold)
-        # SELECT ... WHERE margin_ratio < threshold
-        error = queryset.filter(margin_ratio__lt=threshold)
-        normal = DataSerializer(normal, many=True, context={
-                                'request': request}).data
-        error = DataSerializer(error, many=True, context={
-                               'request': request}).data
-        result = {
-            "Normal": normal,
-            "Error": error
-        }
     else:
-        result = DataSerializer(queryset, many=True, context={
-                                'request': request}).data
+        yesterday,today = datetime.today() - timedelta(1) ,datetime.today()
+        queryset = queryset.filter(
+            created_date__range=[yesterday, today])
+    if threshold is None:
+        threshold = 85
+    # SELECT ... WHERE margin_ratio >= threshold
+    normal = queryset.filter(margin_ratio__gte=threshold)
+    # SELECT ... WHERE margin_ratio < threshold
+    error = queryset.filter(margin_ratio__lt=threshold)
+    normal = DataSerializer(normal, many=True, context={
+                            'request': request}).data
+    error = DataSerializer(error, many=True, context={
+                            'request': request}).data
+    result = {
+        "Normal": normal,
+        "Error": error
+    }
     return Response(result, headers={"description": "SUCCESS"})
 
 # Detail
