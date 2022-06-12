@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from asgiref.sync import sync_to_async
 
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,date
 from django.db.models import Avg
 
 from .models import Data, Bbox, Margin
@@ -27,7 +27,7 @@ def main(request):
         from_date = list(map(int, from_date.split('.')))
         to_date = list(map(int, to_date.split('.')))
         queryset = queryset.filter(
-            created_date__range=[datetime.date(from_date[0], from_date[1], from_date[2]), datetime.date(to_date[0], to_date[1], to_date[2])])
+            created_date__range=[date(from_date[0], from_date[1], from_date[2]), date(to_date[0], to_date[1], to_date[2])])
     else:
         yesterday,today = datetime.today() - timedelta(1) ,datetime.today()
         queryset = queryset.filter(
