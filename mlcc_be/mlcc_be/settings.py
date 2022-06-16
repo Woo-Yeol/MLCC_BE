@@ -12,8 +12,10 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 from pathlib import Path
 import os,json,datetime
+from time import time
 from django.core.exceptions import ImproperlyConfigured
 from celery.schedules import crontab
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -249,7 +251,7 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULE = {
     'run_model': {
         'task': 'valdata.tasks.set_data',
-        'schedule': crontab(1),
+        'schedule': crontab(minute="*/5"),
         'args': ()
     }
 }
