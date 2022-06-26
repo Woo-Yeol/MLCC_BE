@@ -1,6 +1,5 @@
 from __future__ import annotations
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.timezone import now
 
 
@@ -40,15 +39,13 @@ class Bbox(models.Model):
 
 
 class Margin(models.Model):
-    margin_num = models.CharField(max_length=50, primary_key=True)
+    name = models.CharField(max_length=50, primary_key=True)
     bbox = models.ForeignKey(
         Bbox, on_delete=models.CASCADE, related_name='bboxs', null=True)
     margin_x = models.IntegerField(null=True, blank=True)
     real_margin = models.FloatField(null=True, blank=True)
     margin_ratio = models.FloatField(null=True, blank=True)
     margin_width = models.FloatField(null=True, blank=True)
-    cut_off = models.IntegerField(validators=[MinValueValidator(
-        0), MaxValueValidator(5)], null=True, blank=True)
 
     def __str__(self):
         return self.margin_num

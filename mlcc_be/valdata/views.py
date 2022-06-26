@@ -58,19 +58,38 @@ def main(request):
 @api_view(['GET'])
 def detail(request, name):
     box_name = request.query_params.get('box')
-    cut_off = request.query_params.get(
-        'cut-off') if request.query_params.get('cut-off') is not None else 0
+    margin_name = request.query_params.get('margin')
+    threshold = request.query_params.get('threshold')
+    coordinate = request.query_params.get('coordinate')
 
+    if box_name is not None and coordinate is not None and margin_name is None:
+        result = []
+        bbox = BboxSerializer(
+            Bbox.objects.get(name = box_name)).data
+        bbox.pop('data')
+        bbox.pop('min_margin_ratio')
+        return Response(bbox, headers={"description": "SUCCESS"})
+
+    if margin_name is not None:
+        if coordinate is not None:
+            margin = Margin.objects.get(name=margin_name)
+            margin = MarginSerializer(margin).data
+            margin.pop('real_margin')
+            margin.pop('margin_ratio')
+            margin.pop('bbox')
+            return Response(margin, headers={"description": "SUCCESS"})
+        else:
+            margin = Margin.objects.get(name=margin_name)
+            margin = MarginSerializer(margin).data
+            margin.pop('bbox')
+            return Response(margin, headers={"description": "SUCCESS"})
     if box_name is not None:
-        result = {}
-        margin = Margin.objects.all().filter(bbox=box_name, cut_off=cut_off)
+        result = []
+        margin = Margin.objects.all().filter(bbox=box_name)
         margin = MarginSerializer(margin, many=True).data
         for m in margin:
-            num = m['margin_num']
-            m.pop('cut_off')
-            m.pop('margin_num')
             m.pop('bbox')
-            result[num] = m
+            result.append(m)
     else:
         data = DataSerializer(Data.objects.get(name=name),
                               context={'request': request}).data
@@ -88,6 +107,7 @@ def detail(request, name):
 
         result = {
             "original_img": data['original_image'],
+            "segmentation_img": data['segmentation_image'],
             "Box": bbox_data,
             "Ratio": ratio,
         }
