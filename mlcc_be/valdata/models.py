@@ -43,9 +43,10 @@ class Margin(models.Model):
     bbox = models.ForeignKey(
         Bbox, on_delete=models.CASCADE, related_name='bboxs', null=True)
     margin_x = models.IntegerField(null=True, blank=True)
+    margin_y = models.IntegerField(null=True, blank=True)
     real_margin = models.FloatField(null=True, blank=True)
     margin_ratio = models.FloatField(null=True, blank=True)
     margin_width = models.FloatField(null=True, blank=True)
 
     def __str__(self):
-        return self.margin_num
+        return self.name

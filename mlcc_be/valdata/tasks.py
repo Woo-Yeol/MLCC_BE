@@ -1,3 +1,4 @@
+from math import inf
 import os
 import shutil
 import sys
@@ -20,7 +21,6 @@ from mlcc_django import run_model
 @shared_task
 def set_data():
     # 1. 모델 실행
-    
     model_root = "C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system"   
     server_root = "C:/Users/user/Desktop/IITP/MLCC_BE"
     dt = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -52,11 +52,12 @@ def set_data():
                         shutil.copyfile(c_dir + '/' + img_name, f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}/{img_name}")
                         shutil.copyfile(c_dir + '/' + seg_name, f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}/{seg_name}")
                         d = Data()
-                        d.name = result['img_basename'], 
+                        d.name = img_name[0:len(img_name)-4],
                         d.original_image = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}/{result['img_basename'][0:len(result['img_basename'])-4]}/{img_name}"
                         d.segmentation_image = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}/{result['img_basename'][0:len(result['img_basename'])-4]}/{seg_name}"
                         d.created_date = date.today()
                         d.save()
+                        total_min_ratio = inf
                         for bbox_id, anotation in enumerate(result['qa_result_list']):
                             b = Bbox.objects.create(
                                 name=result['img_basename'][0:len(result['img_basename'])-4] + '_bbox_' + str(bbox_id+1),
@@ -70,25 +71,26 @@ def set_data():
                             b.save()
                             for i in range(len(anotation['first_lst'])):
                                 m = Margin.objects.create(
-                                    margin_num=result['img_basename'][0:len(result['img_basename'])-4] + '_bbox_' + str(bbox_id+1) + '_magrin_' + str(i+1),
+                                    name=result['img_basename'][0:len(result['img_basename'])-4] + '_bbox_' + str(bbox_id+1) + '_magrin_' + str(i+1),
                                     bbox=b,
                                     margin_x = anotation['first_lst'][i],
+                                    margin_y = result['bboxes'][bbox_id][1] + i,
                                     real_margin = anotation['real_margin'],
                                     margin_ratio = anotation['margin_ratio'][i],
                                     margin_width = anotation['last_lst'][i]-anotation['first_lst'][i],
-                                    # 현재 컷오프 0인 값만 모델에서 출력중인데 변경가능한지
-                                    cut_off = 0
                                 )
                                 m.save()
+                            total_min_ratio = min(total_min_ratio, anotation['min_margin_ratio'])
+                        d.margin_ratio = total_min_ratio
                         d.save()
         # 3. DB 적재한 모델 원본 데이터 삭제
         # val 내부 이미지
         # mmcl_results 내부 폴더
-        entries = os.scandir(f'{model_root}/mlcc_datasets/val_test')
-        for entry in entries:
-            os.remove(entry.path)
-        entries = os.scandir(f'{model_root}/mmcl_results')
-        for entry in entries:
-            os.remove(entry.path)
+        # entries = os.scandir(f'{model_root}/mlcc_datasets/val_test')
+        # for entry in entries:
+        #     os.remove(entry.path)
+        # entries = os.scandir(f'{model_root}/mmcl_results')
+        # for entry in entries:
+        #     os.remove(entry.path)
+
     
-    set_data()
