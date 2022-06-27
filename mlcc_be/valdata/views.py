@@ -18,8 +18,6 @@ from .tasks import *
 # Main Page
 
 
-def test(request):
-    set_data()
 
 @api_view(['GET'])
 def main(request):

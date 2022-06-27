@@ -28,5 +28,4 @@ urlpatterns = [
     path('data/<str:pk>', DataRetrieveView.as_view()),
     path('bbox/<str:pk>', BboxRetrieveView.as_view()),
     path('margin/<str:pk>', MarginRetrieveView.as_view()),
-    path('test', test),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

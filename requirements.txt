@@ -1,5 +1,6 @@
 click-repl==0.2.0
 colorama==0.4.4
+celery==5.2.6
 Django==4.0.3
 django-cors-headers==3.11.0
 django-filter==21.1
