@@ -1,95 +1,21 @@
-addict==2.4.0
-albumentations==1.1.0
-amqp==5.1.0
-asgiref==3.5.0
-async-timeout==4.0.2
-billiard==3.6.4.0
-brotlipy==0.7.0
-cached-property==1.5.2
-celery==5.2.6
-certifi==2021.10.8
-cffi @ file:///C:/ci_310/cffi_1642682485096/work
-charset-normalizer @ file:///tmp/build/80754af9/charset-normalizer_1630003229654/work
-click==8.1.2
-click-didyoumean==0.3.0
-click-plugins==1.1.1
 click-repl==0.2.0
 colorama==0.4.4
-cryptography @ file:///C:/ci/cryptography_1652101770956/work
-cycler==0.11.0
-Cython==0.29.30
-Deprecated==1.2.13
-Django==3.2.13
+Django==4.0.3
 django-cors-headers==3.11.0
 django-filter==21.1
 djangorestframework==3.13.1
 djangorestframework-jwt==1.11.0
-fonttools==4.33.3
-gevent==21.12.0
-greenlet==1.1.2
-idna @ file:///tmp/build/80754af9/idna_1637925883363/work
-imageio==2.19.3
 importlib-metadata==4.11.3
-instaboostfast==0.1.2
-joblib==1.1.0
-kiwisolver==1.4.3
 kombu==5.2.4
-lvis @ git+https://github.com/lvis-dataset/lvis-api.git@35f09cd7c5f313a9bf27b329ca80effe2b0c8a93
 Markdown==3.3.6
-matplotlib==3.5.2
-mkl-fft==1.3.1
-mkl-random @ file:///C:/ci/mkl_random_1626186163140/work
-mkl-service==2.4.0
-mmcv-full==1.5.0
-mmdet==2.25.0
-model-index==0.1.11
-networkx==2.6.3
-numpy @ file:///C:/ci/numpy_and_numpy_base_1653574840943/work
-opencv-python==4.6.0.66
-opencv-python-headless==4.6.0.66
-openmim==0.1.5
-ordered-set==4.1.0
-packaging==21.3
-pandas==1.3.5
-panopticapi @ git+https://github.com/cocodataset/panopticapi.git@7bb4655548f98f3fedc07bf37e9040a992b054b0
 Pillow==9.1.0
-prettytable==3.3.0
 prompt-toolkit==3.0.29
-pycocotools==2.0.4
-pycparser @ file:///tmp/build/80754af9/pycparser_1636541352034/work
 PyJWT==1.7.1
-pyOpenSSL @ file:///opt/conda/conda-bld/pyopenssl_1643788558760/work
-pyparsing==3.0.9
-PySocks @ file:///C:/ci/pysocks_1594394709107/work
-python-dateutil==2.8.2
 pytz==2021.3
-PyWavelets==1.3.0
-PyYAML==6.0
-qudida==0.0.4
-redis==4.3.3
-regex==2022.6.2
-requests @ file:///opt/conda/conda-bld/requests_1641824580448/work
-scikit-image==0.19.3
-scikit-learn==1.0.2
-scipy==1.7.3
-six @ file:///tmp/build/80754af9/six_1644875935023/work
+six==1.16.0
 sqlparse==0.4.2
-tabulate==0.8.9
-terminaltables==3.1.10
-threadpoolctl==3.1.0
-tifffile==2021.11.2
-torch==1.11.0
-torchaudio==0.11.0
-torchvision==0.12.0
-typing_extensions @ file:///opt/conda/conda-bld/typing_extensions_1647553014482/work
 tzdata==2022.1
-urllib3 @ file:///C:/ci/urllib3_1650639842077/work
 vine==5.0.0
 wcwidth==0.2.5
-win-inet-pton @ file:///C:/ci/win_inet_pton_1605306165655/work
 wincertstore==0.2
-wrapt==1.14.1
-yapf==0.32.0
 zipp==3.7.0
-zope.event==4.5.0
-zope.interface==5.4.0
