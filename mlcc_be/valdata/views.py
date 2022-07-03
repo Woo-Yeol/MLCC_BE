@@ -9,14 +9,13 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from asgiref.sync import sync_to_async
 
-from datetime import datetime,timedelta,date
+from datetime import datetime, timedelta, date
 from django.db.models import Avg
 
 from .models import Data, Bbox, Margin
 from .serializers import DataSerializer, BboxSerializer, MarginSerializer
 from .tasks import *
 # Main Page
-
 
 
 @api_view(['GET'])
@@ -31,7 +30,7 @@ def main(request):
         queryset = queryset.filter(
             created_date__range=[date(from_date[0], from_date[1], from_date[2]), date(to_date[0], to_date[1], to_date[2])])
     else:
-        yesterday,today = datetime.today() - timedelta(1) ,datetime.today()
+        yesterday, today = datetime.today() - timedelta(1), datetime.today()
         queryset = queryset.filter(
             created_date__range=[yesterday, today])
     if threshold is None:
@@ -43,7 +42,7 @@ def main(request):
     normal = DataSerializer(normal, many=True, context={
                             'request': request}).data
     error = DataSerializer(error, many=True, context={
-                            'request': request}).data
+        'request': request}).data
     result = {
         "Normal": normal,
         "Error": error
@@ -55,60 +54,40 @@ def main(request):
 
 @api_view(['GET'])
 def detail(request, name):
-    box_name = request.query_params.get('box')
-    margin_name = request.query_params.get('margin')
     threshold = request.query_params.get('threshold')
-    coordinate = request.query_params.get('coordinate')
 
-    if box_name is not None and coordinate is not None and margin_name is None:
-        result = []
-        bbox = BboxSerializer(
-            Bbox.objects.get(name = box_name)).data
-        bbox.pop('data')
-        bbox.pop('min_margin_ratio')
-        return Response(bbox, headers={"description": "SUCCESS"})
+    # Data, Bbox Query and Serializer
+    data = DataSerializer(Data.objects.get(name=name),
+                          context={'request': request}).data
+    bbox = BboxSerializer(
+        Bbox.objects.all().filter(data=name), many=True).data
 
-    if margin_name is not None:
-        if coordinate is not None:
-            margin = Margin.objects.get(name=margin_name)
-            margin = MarginSerializer(margin).data
-            margin.pop('real_margin')
-            margin.pop('margin_ratio')
-            margin.pop('bbox')
-            return Response(margin, headers={"description": "SUCCESS"})
-        else:
-            margin = Margin.objects.get(name=margin_name)
-            margin = MarginSerializer(margin).data
-            margin.pop('bbox')
-            return Response(margin, headers={"description": "SUCCESS"})
-    if box_name is not None:
-        result = []
-        margin = Margin.objects.all().filter(bbox=box_name)
-        margin = MarginSerializer(margin, many=True).data
-        for m in margin:
+    ratio = {}
+    bbox_data = {}
+    margin_list = {}
+
+    for b in bbox:
+        bbox_name = b['name']
+        ratio[bbox_name] = b['min_margin_ratio']
+        b.pop('name')
+        b.pop('data')
+        b.pop('min_margin_ratio')
+        bbox_data[bbox_name] = b
+        margin_data = MarginSerializer(
+            Margin.objects.all().filter(bbox=bbox_name), many=True).data
+        for m in margin_data:
+            m.pop('name')
             m.pop('bbox')
-            result.append(m)
-    else:
-        data = DataSerializer(Data.objects.get(name=name),
-                              context={'request': request}).data
-        bbox = BboxSerializer(
-            Bbox.objects.all().filter(data=name), many=True).data
-        ratio = {}
-        bbox_data = {}
-        for b in bbox:
-            name = b['name']
-            ratio[name] = b['min_margin_ratio']
-            b.pop('name')
-            b.pop('data')
-            b.pop('min_margin_ratio')
-            bbox_data[name] = b
+        margin_list[bbox_name] = margin_data
 
-        result = {
-            "original_img": data['original_image'],
-            "segmentation_img": data['segmentation_image'],
-            "Box": bbox_data,
-            "Ratio": ratio,
-        }
+    result = {
+        "Original_img": data['original_image'],
+        "Segmentation_img": data['segmentation_image'],
+        "Box": bbox_data,
+        "Ratio": ratio,
+        "Margin_list": margin_list,
+    }
+
     return Response(result, headers={"description": "SUCCESS"})
 
 # Data
@@ -125,10 +104,6 @@ class DataListView(ListCreateAPIView):
 
     queryset = Data.objects.all()
     serializer_class = DataSerializer
-
-# class DataListView(ListCreateAPIView):
-#     queryset = Data.objects.all()
-#     serializer_class = DataSerializer
 
 
 class DataRetrieveView(RetrieveUpdateDestroyAPIView):
