@@ -81,11 +81,12 @@ def detail(request, name):
         margin_list[bbox_name] = margin_data
 
     result = {
-        "Original_img": data['original_image'],
-        "Segmentation_img": data['segmentation_image'],
+        "Original_image": data['original_image'],
+        "Segmentation_image": data['segmentation_image'],
         "Box": bbox_data,
         "Ratio": ratio,
         "Margin_list": margin_list,
+        "Cvat_url": data['cvat_url']
     }
 
     return Response(result, headers={"description": "SUCCESS"})

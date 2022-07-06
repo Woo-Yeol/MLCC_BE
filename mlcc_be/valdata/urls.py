@@ -17,7 +17,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from .views import DataListView, BboxListView, MarginListView, DataRetrieveView, BboxRetrieveView, MarginRetrieveView, main, detail, test
+from .views import DataListView, BboxListView, MarginListView, DataRetrieveView, BboxRetrieveView, MarginRetrieveView, main, detail
 
 urlpatterns = [
     path('main', main),

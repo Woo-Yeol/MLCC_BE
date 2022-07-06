@@ -251,7 +251,7 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULE = {
     'run_model': {
         'task': 'valdata.tasks.set_data',
-        'schedule': crontab(minute="*/5"),
+        'schedule': crontab(minute="*/1"),
         'args': ()
     }
 }

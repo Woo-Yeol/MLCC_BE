@@ -17,7 +17,7 @@ class Data(models.Model):
         upload_to=data_directory_path, null=True, blank=True)
     margin_ratio = models.FloatField(null=True, blank=True)
     created_date = models.DateField(auto_now_add=True)
-    # bbox = models.ManyToManyField(Bbox, related_name='data', blank=True)
+    cvat_url = models.URLField(null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -28,8 +28,8 @@ class Bbox(models.Model):
     data = models.ForeignKey(
         Data, on_delete=models.CASCADE, related_name='datas', null=True)
     min_margin_ratio = models.FloatField(null=True, blank=True)
-    box_center_x = models.IntegerField(null=True, blank=True)
-    box_center_y = models.IntegerField(null=True, blank=True)
+    box_x = models.IntegerField(null=True, blank=True)
+    box_y = models.IntegerField(null=True, blank=True)
     box_width = models.IntegerField(null=True, blank=True)
     box_height = models.IntegerField(null=True, blank=True)
     # margin = models.ManyToManyField(Margin, related_name='bbox', blank=True)
