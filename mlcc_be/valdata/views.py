@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404 as _get_object_or_404
 from django.core.exceptions import ValidationError
 from django.http import Http404
 
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListDestroyAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
