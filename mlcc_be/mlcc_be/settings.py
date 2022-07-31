@@ -249,9 +249,20 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
 CELERY_BEAT_SCHEDULE = {
-    'run_model': {
-        'task': 'valdata.tasks.set_data',
+    'get_result': {
+        'task': 'valdata.tasks.get_result',
         'schedule': crontab(minute="*/1"),
         'args': ()
-    }
+    },
+    'reset_data': {
+        'task': 'valdata.tasks.reset_data',
+        'schedule': crontab(minute="*/1"),
+        'args': ()
+    },
 }
+
+# ManualLog
+STANDARD_MARGIN_THR = 0.7
+
+# Mode
+SYSTEM_MODE = 'manual'

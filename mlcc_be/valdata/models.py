@@ -50,3 +50,10 @@ class Margin(models.Model):
 
     def __str__(self):
         return self.name
+
+class ManualLog(models.Model):
+    filename = models.CharField(max_length=50)
+    dt = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.filename

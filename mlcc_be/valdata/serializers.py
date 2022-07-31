@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Data, Bbox, Margin
+from .models import Data, Bbox, ManualLog, Margin
 
 
 class MarginSerializer(serializers.ModelSerializer):
@@ -28,3 +28,8 @@ class DataSerializer(serializers.ModelSerializer):
         model = Data
         fields = '__all__'
         read_only_fields = ('bbox',)
+
+class ManualLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ManualLog
+        fields = '__all__'

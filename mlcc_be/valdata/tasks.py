@@ -1,4 +1,6 @@
 from math import inf
+import pathlib
+from django.conf import settings
 import os
 import shutil
 import sys
@@ -9,36 +11,43 @@ import json
 import pandas as pd
 import numpy as np
 from PIL import Image
-from .models import Data, Bbox, Margin
+from .models import Data, Bbox, Margin, ManualLog
 from django.core.files.images import ImageFile
 from datetime import datetime, date, timedelta
 import subprocess 
 sys.path.append("C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system")
-from mlcc_django import run_model
+from mlcc_django import auto_run_model, manual_run_model
 from mlcc_systemkits.mlcc_system import MLCC_SYSTEM
 import time
 from multiprocessing import Pool
-import ray
 
 # db에 데이터 넣을 때 역순으로 넣기
 
 running = False
 results = []
 @shared_task
-def set_data():
+def get_result():
+    mode = getattr(settings, 'SYSTEM_MODE')
+    if mode == 'auto':
+        auto_get_result()
+    else:
+        manual_get_result()
+
+def auto_get_result():
     global running
     if running:
         return -1
     running = True
     try:
         # 1. 모델 실행
-        model_root = "C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system"   
+        model_root = "C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system"
         server_root = "C:/Users/user/Desktop/IITP/MLCC_BE"
         dt = datetime.now().strftime('%Y%m%d%H%M%S')
         dir_path = f"{model_root}/mlcc_datasets/val_test"
         entries = os.scandir(dir_path)
         length = 0
         pic = []
+
         for entry in entries:
             length += 1
             pic.append(entry.path)
@@ -48,15 +57,7 @@ def set_data():
             # python mlcc_inference.py
             # --source 'mlcc_datasets/val/' --remove_edge_bbox --project 'mmcl_results' --name 'demo1'
             global results
-            results = run_model(dt) 
-
-            # ray.init(num_cpus=8)
-            # results = ray.put(results)
-            # ray.get(save_result.remote(results))
-            
-            # pool = Pool(processes=12)
-            # pool.map(save_result, results)
-            # pool.close()
+            results = auto_run_model(dt) 
 
             for i, result in enumerate(results):
                 save_result(i)
@@ -79,7 +80,64 @@ def set_data():
         running = False
 
 
-#@shared_task
+def manual_get_result():
+    global running
+    if running:
+        return -1
+    running = True
+    try:
+        model_root = "C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system"   
+        server_root = "C:/Users/user/Desktop/IITP/MLCC_BE"
+        dt = datetime.now().strftime('%Y%m%d%H%M%S')
+        # 실행 경로 정하기
+        dir_path = f"{model_root}/mlcc_datasets/smb"
+        backup_path = f"{dir_path}/backup"
+
+        first_create_time = datetime.now()
+        first_create_pc = ''
+        for path, subdirs, files in os.walk(dir_path):
+            for name in files:
+                t = os.path.getmtime(pathlib.PurePath(path, name))
+                if t < first_create_time:
+                    first_create_time = t
+                    first_create_pc = path.split('smb/')[1].split('/')[0]
+
+        pc_name = first_create_pc
+        thr = getattr(settings, 'STANDARD_MARGIN_THR', 0.75)
+        entries = os.scandir(dir_path)
+        length = 0
+        pic = []
+        for entry in entries:
+            length += 1
+            pic.append(entry.path)
+        # 2. 모델 실행 및 결과파일 생성
+        if length != 0:
+            global results
+            results = manual_run_model(pc_name, thr) 
+            os.makedirs(f'{dir_path+pc_name}/{dt}')
+            for result in results:
+                assessment = True
+                for anotation in result['qa_result_list']:
+                    if anotation['decision_result'] == False:
+                        assessment = False
+                        break
+
+                f = open(f'{dir_path+pc_name}/{dt}/{result["img_basename"]}_{str(assessment)}', 'w')
+                f.close()
+                shutil.copyfile(f'{dir_path+pc_name}/{result["img_basename"]}', f'{backup_path}/{result["img_basename"]}')
+                shutil.move(f'{dir_path+pc_name}/{result["img_basename"]}', {dir_path+pc_name}/{dt}/{result["img_basename"]})
+                # 3. DB에 Log 적재
+                log = ManualLog()
+                log.filename = result["img_basename"]
+                log.dt = datetime.now()
+
+        # semaphore unlock
+        running = False
+    
+    except:
+        running = False
+
+
 def save_result(i):
     result = results[i]
     server_root = "C:/Users/user/Desktop/IITP/MLCC_BE"
@@ -133,3 +191,19 @@ def save_result(i):
     d.margin_ratio = total_min_ratio
     d.save()
     print(time.time()-start)
+
+
+# delete log, file
+@shared_task
+def reset_data():
+    yesterday = datetime.today() - timedelta(days=1)
+    log_list = ManualLog.objects.filter(dt__lte=yesterday)
+    for log in log_list:
+        log.delete()
+    model_root = "C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system"  
+    dir_path = f"{model_root}/mlcc_datasets/smb"
+    for i in range(1, 6):
+        path = f'{dir_path}/pc{i}'
+    if os.path.exists(path):
+        shutil.rmtree(path)
+        os.mkdir(path)

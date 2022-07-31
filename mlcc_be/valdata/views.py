@@ -1,9 +1,10 @@
+from django.conf import settings
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from django.shortcuts import get_object_or_404 as _get_object_or_404
 from django.core.exceptions import ValidationError
 from django.http import Http404
 
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListDestroyAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -12,9 +13,10 @@ from asgiref.sync import sync_to_async
 from datetime import datetime, timedelta, date
 from django.db.models import Avg
 
-from .models import Data, Bbox, Margin
-from .serializers import DataSerializer, BboxSerializer, MarginSerializer
+from .models import Data, Bbox, ManualLog, Margin
+from .serializers import DataSerializer, BboxSerializer, ManualLogSerializer, MarginSerializer
 from .tasks import *
+from celery.schedules import crontab
 # Main Page
 
 
@@ -136,3 +138,31 @@ class MarginRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Margin.objects.all()
     serializer_class = MarginSerializer
     # lookup_fields = ['bbox']
+
+
+# ManualLog
+
+class ManualLogListView(ListCreateAPIView):
+    queryset = ManualLog.objects.all()
+    serializer_class = ManualLogSerializer
+
+# schedule set
+@api_view(['GET', 'POST'])
+def set_schedule(request):
+    if request.method == 'POST':
+        if request.data.get('mode') == 'auto':
+            setattr(settings, 'SYSTEM_MODE', 'auto')
+        else:
+            setattr(settings, 'SYSTEM_MODE', 'manual')
+    if request.method == 'GET':
+        mode = getattr(settings, 'SYSTEM_MODE')
+        return Response({"mode": mode})
+
+# thr set
+@api_view(['GET', 'POST'])
+def set_thr(request):
+    if request.method == 'POST':
+        setattr(settings, 'STANDARD_MARGIN_THR', int(request.data.get('threshold')/100))
+    if request.method == 'GET':
+        thr = getattr(settings, 'STANDARD_MARGIN_THR')
+        return Response({"threshold": thr})
