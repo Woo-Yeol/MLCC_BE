@@ -102,6 +102,8 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'mode',
+    'threshold'
 ]
 
 ############################################################################################################
@@ -251,7 +253,7 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULE = {
     'get_result': {
         'task': 'valdata.tasks.get_result',
-        'schedule': timedelta(seconds=10),
+        'schedule': timedelta(seconds=2),
         'args': ()
     },
     'reset_data': {
@@ -262,7 +264,7 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # ManualLog
-STANDARD_MARGIN_THR = 0.7
+STANDARD_MARGIN_THR = 0.85
 
 # Mode
 SYSTEM_MODE = 'manual'

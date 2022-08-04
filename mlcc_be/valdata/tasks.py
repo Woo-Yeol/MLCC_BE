@@ -88,7 +88,7 @@ def manual_get_result():
     try:
         model_root = "C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system"   
         server_root = "C:/Users/user/Desktop/IITP/MLCC_BE"
-        dt = datetime.now().strftime('%Y%m%d%H%M')
+        dt = datetime.now().strftime('%y%m%d_%H%M%S')
         # 실행 경로 정하기
         dir_path = f"{model_root}/mlcc_datasets/smb"
         backup_path = f"{dir_path}/backup"
@@ -114,14 +114,14 @@ def manual_get_result():
             os.makedirs(f'{dir_path}/{pc_name}/{dt}')
             for result in results:
                 assessment = True
-                for anotation in result['qa_result_list']:
-                    if anotation['decision_result'] == False:
+                for qa_result in result['qa_result_list']:
+                    if qa_result['decision_result'] == False:
                         assessment = False
                         break
 
-                f = open(f'{dir_path}/{pc_name}/{dt}/{result["img_basename"]}_{str(assessment)}', 'w')
+                f = open(f'{dir_path}/{pc_name}/{dt}/{result["img_basename"]}_{str(assessment)}.txt', 'w')
                 f.close()
-                shutil.copyfile(f'{dir_path}/{pc_name}/{result["img_basename"]}', f'{backup_path}/{result["img_basename"]}')
+                shutil.copyfile(f'{dir_path}/{pc_name}/{result["img_basename"]}', f'{backup_path}/{dt}_{result["img_basename"]}')
                 shutil.move(f'{dir_path}/{pc_name}/{result["img_basename"]}', f'{dir_path}/{pc_name}/{dt}/{result["img_basename"]}')
                 # 3. DB에 Log 적재
                 log = ManualLog()
@@ -163,29 +163,29 @@ def save_result(i):
     d.cvat_url = f'http://localhost:8080/tasks/1/jobs/1?frame={i}'
     d.save()
     total_min_ratio = inf
-    for bbox_id, anotation in enumerate(result['qa_result_list']):
+    for bbox_id, qa_result in enumerate(result['qa_result_list']):
         b = Bbox.objects.create(
             name=result['img_basename'][0:len(result['img_basename'])-4] + '_bbox_' + str(bbox_id+1),
             data=d,
-            min_margin_ratio=anotation['min_margin_ratio']*100,
+            min_margin_ratio=qa_result['min_margin_ratio']*100,
             box_width = (result['bboxes'][bbox_id][2] - result['bboxes'][bbox_id][0]),
             box_height = (result['bboxes'][bbox_id][3] - result['bboxes'][bbox_id][1]),
             box_x = result['bboxes'][bbox_id][0],
             box_y = result['bboxes'][bbox_id][1],
         )
         b.save()
-        for i in range(len(anotation['first_lst'])):
+        for i in range(len(qa_result['first_lst'])):
             m = Margin.objects.create(
                 name=result['img_basename'][0:len(result['img_basename'])-4] + '_bbox_' + str(bbox_id+1) + '_magrin_' + str(i+1),
                 bbox=b,
-                margin_x = result['bboxes'][bbox_id][0] + anotation['first_lst'][i],
+                margin_x = result['bboxes'][bbox_id][0] + qa_result['first_lst'][i],
                 margin_y = result['bboxes'][bbox_id][1] + i,
-                real_margin = anotation['real_margin'],
-                margin_ratio = anotation['margin_ratio'][i]*100,
-                margin_width = anotation['last_lst'][i]-anotation['first_lst'][i],
+                real_margin = qa_result['real_margin'],
+                margin_ratio = qa_result['margin_ratio'][i]*100,
+                margin_width = qa_result['last_lst'][i]-qa_result['first_lst'][i],
             )
             m.save()
-        total_min_ratio = min(total_min_ratio, anotation['min_margin_ratio']) * 100
+        total_min_ratio = min(total_min_ratio, qa_result['min_margin_ratio']) * 100
     d.margin_ratio = total_min_ratio
     d.save()
     print(time.time()-start)

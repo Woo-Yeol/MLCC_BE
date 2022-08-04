@@ -147,22 +147,39 @@ class ManualLogListView(ListCreateAPIView):
     serializer_class = ManualLogSerializer
 
 # schedule set
-@api_view(['GET', 'POST'])
+@api_view(['GET'])
 def set_schedule(request):
-    if request.method == 'POST':
-        if request.data.get('mode') == 'auto':
-            setattr(settings, 'SYSTEM_MODE', 'auto')
-        else:
-            setattr(settings, 'SYSTEM_MODE', 'manual')
     if request.method == 'GET':
         mode = getattr(settings, 'SYSTEM_MODE')
         return Response({"mode": mode})
 
 # thr set
-@api_view(['GET', 'POST'])
+@api_view(['GET'])
 def set_thr(request):
-    if request.method == 'POST':
-        setattr(settings, 'STANDARD_MARGIN_THR', int(request.data.get('threshold')/100))
     if request.method == 'GET':
         thr = getattr(settings, 'STANDARD_MARGIN_THR')
         return Response({"threshold": thr})
+
+@api_view(['POST'])
+def set_environment_variable(request):
+    if request.method == 'POST':
+        mode = request.META.get('HTTP_MODE')
+        thr = request.META.get('HTTP_THRESHOLD')
+        if mode == 'auto':
+            setattr(settings, 'SYSTEM_MODE', 'auto')
+        elif mode == 'manual':
+            setattr(settings, 'SYSTEM_MODE', 'manual')
+        elif mode == None:
+            pass
+        else:
+            return Response({'400': 'Bad request'})
+    
+        if thr == None:
+            pass
+        elif 0 <= int(thr) <= 100:
+            setattr(settings, 'STANDARD_MARGIN_THR', int(thr)/100)    
+        else:
+            return Response({'400': 'Bad request'})
+
+        return Response({"200", f"ok"})
+    ...
