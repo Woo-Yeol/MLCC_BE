@@ -151,13 +151,14 @@ class ManualLogListView(ListCreateAPIView):
 def set_schedule(request):
     if request.method == 'GET':
         mode = getattr(settings, 'SYSTEM_MODE')
+        print(mode)
         return Response({"mode": mode})
 
 # thr set
 @api_view(['GET'])
 def set_thr(request):
     if request.method == 'GET':
-        thr = getattr(settings, 'STANDARD_MARGIN_THR')
+        thr = int(getattr(settings, 'STANDARD_MARGIN_THR') * 100)
         return Response({"threshold": thr})
 
 @api_view(['POST'])
@@ -177,7 +178,7 @@ def set_environment_variable(request):
         if thr == None:
             pass
         elif 0 <= int(thr) <= 100:
-            setattr(settings, 'STANDARD_MARGIN_THR', int(thr)/100)    
+            setattr(settings, 'STANDARD_MARGIN_THR', int(thr) / 100)    
         else:
             return Response({'400': 'Bad request'})
 

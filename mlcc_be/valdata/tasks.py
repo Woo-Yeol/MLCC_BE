@@ -27,10 +27,12 @@ running = False
 results = []
 @shared_task
 def get_result():
+    print(datetime.now())
     mode = getattr(settings, 'SYSTEM_MODE')
+    print(mode)
     if mode == 'auto':
         auto_get_result()
-    else:
+    elif mode == 'manual':
         manual_get_result()
 
 def auto_get_result():
@@ -104,13 +106,13 @@ def manual_get_result():
                         first_create_pc = path[len(path)-3:]
 
         pc_name = first_create_pc
-        thr = getattr(settings, 'STANDARD_MARGIN_THR', 0.75)
+        thr = getattr(settings, 'STANDARD_MARGIN_THR')
         entries = os.scandir(dir_path)
         length = 0
         # 2. 모델 실행 및 결과파일 생성
         if pc_name != '':
             global results
-            results = manual_run_model(pc_name, thr) 
+            results = manual_run_model(pc_name, thr)
             os.makedirs(f'{dir_path}/{pc_name}/{dt}')
             for result in results:
                 assessment = True
