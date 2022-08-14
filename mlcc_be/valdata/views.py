@@ -13,9 +13,8 @@ from asgiref.sync import sync_to_async
 from datetime import datetime, timedelta, date
 from django.db.models import Avg
 
-from .models import Data, Bbox, ManualLog, Margin
+from .models import Data, Bbox, ManualLog, Margin, State
 from .serializers import DataSerializer, BboxSerializer, ManualLogSerializer, MarginSerializer
-from . import tasks
 from celery.schedules import crontab
 # Main Page
 
@@ -150,14 +149,16 @@ class ManualLogListView(ListCreateAPIView):
 @api_view(['GET'])
 def set_schedule(request):
     if request.method == 'GET':
-        mode = getattr(tasks, 'system_mode')
+        #mode = getattr(tasks, 'system_mode')
+        mode = State.objects.all()[0].mode
         return Response({"mode": mode})
 
 # thr set
 @api_view(['GET'])
 def set_thr(request):
     if request.method == 'GET':
-        thr = int(getattr(tasks, 'threshold') * 100)
+        #thr = int(getattr(tasks, 'threshold') * 100)
+        thr = State.objects.all()[0].threshold * 100
         return Response({"threshold": thr})
 
 @api_view(['POST'])
@@ -166,9 +167,13 @@ def set_environment_variable(request):
         mode = request.META.get('HTTP_MODE')
         thr = request.META.get('HTTP_THRESHOLD')
         if mode == 'auto':
-            setattr(tasks, 'system_mode', 'auto')
+            s = State.objects.all()[0]
+            s.mode = 'auto'
+            s.save()
         elif mode == 'manual':
-            setattr(tasks, 'system_mode', 'manual')
+            s = State.objects.all()[0]
+            s.mode = 'manual'
+            s.save()
         elif mode == None:
             pass
         else:
@@ -177,7 +182,9 @@ def set_environment_variable(request):
         if thr == None:
             pass
         elif 0 <= int(thr) <= 100:
-            setattr(tasks, 'threshold', int(thr) / 100)    
+            s = State.objects.all()[0]
+            s.threshold = int(thr) / 100
+            s.save()   
         else:
             return Response({'400': 'Bad request'})
 

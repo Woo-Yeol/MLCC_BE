@@ -11,7 +11,7 @@ import json
 import pandas as pd
 import numpy as np
 from PIL import Image
-from .models import Data, Bbox, Margin, ManualLog
+from .models import Data, Bbox, Margin, ManualLog, State
 from django.core.files.images import ImageFile
 from datetime import datetime, date, timedelta
 import subprocess 
@@ -23,16 +23,13 @@ from multiprocessing import Pool
 import typing
 # db에 데이터 넣을 때 역순으로 넣기
 
-
-system_mode = 'auto'
-threshold = 0.85
 running = False
 results = []
 model_root = "C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system"
-dt = datetime.now().strftime('%y%m%d_%H%M%S')
 
 @shared_task
 def get_model_output() -> None:
+    system_mode = State.objects.all()[0].mode
     if system_mode == 'auto':
         auto_get_result()
     elif system_mode == 'manual':
@@ -40,6 +37,7 @@ def get_model_output() -> None:
 
 
 def auto_get_result() -> None:
+    global running
     if running:
         return -1
     running = True
@@ -47,6 +45,7 @@ def auto_get_result() -> None:
         # 1. 모델 실행
         dir_path = f"{model_root}/mlcc_datasets/val_test"
         entries = os.scandir(dir_path)
+        dt = datetime.now().strftime('%y%m%d_%H%M%S')
         length = 0
         pic = []
         for entry in entries:
@@ -69,6 +68,7 @@ def auto_get_result() -> None:
         running = False
 
 def manual_get_result() -> None:
+    global running
     if running:
         return -1
     running = True
@@ -76,7 +76,7 @@ def manual_get_result() -> None:
         # 실행 경로 정하기
         dir_path = f"{model_root}/mlcc_datasets/smb"
         backup_path = f"{dir_path}/backup"
-
+        dt = datetime.now().strftime('%y%m%d_%H%M%S')
         first_create_time = datetime.now()
         first_create_pc = ''
         for path, subdirs, files in os.walk(dir_path):
@@ -93,6 +93,7 @@ def manual_get_result() -> None:
         # 2. 모델 실행 및 결과파일 생성
         if pc_name != '':
             global results
+            threshold = State.objects.all()[0].threshold
             results = manual_run_model(pc_name, threshold)
             os.makedirs(f'{dir_path}/{pc_name}/{dt}')
             for result in results:
