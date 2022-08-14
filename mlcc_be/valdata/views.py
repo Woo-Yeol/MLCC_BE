@@ -15,7 +15,7 @@ from django.db.models import Avg
 
 from .models import Data, Bbox, ManualLog, Margin
 from .serializers import DataSerializer, BboxSerializer, ManualLogSerializer, MarginSerializer
-from .tasks import *
+from . import tasks
 from celery.schedules import crontab
 # Main Page
 
@@ -150,15 +150,14 @@ class ManualLogListView(ListCreateAPIView):
 @api_view(['GET'])
 def set_schedule(request):
     if request.method == 'GET':
-        mode = getattr(settings, 'SYSTEM_MODE')
-        print(mode)
+        mode = getattr(tasks, 'system_mode')
         return Response({"mode": mode})
 
 # thr set
 @api_view(['GET'])
 def set_thr(request):
     if request.method == 'GET':
-        thr = int(getattr(settings, 'STANDARD_MARGIN_THR') * 100)
+        thr = int(getattr(tasks, 'threshold') * 100)
         return Response({"threshold": thr})
 
 @api_view(['POST'])
@@ -167,9 +166,9 @@ def set_environment_variable(request):
         mode = request.META.get('HTTP_MODE')
         thr = request.META.get('HTTP_THRESHOLD')
         if mode == 'auto':
-            setattr(settings, 'SYSTEM_MODE', 'auto')
+            setattr(tasks, 'system_mode', 'auto')
         elif mode == 'manual':
-            setattr(settings, 'SYSTEM_MODE', 'manual')
+            setattr(tasks, 'system_mode', 'manual')
         elif mode == None:
             pass
         else:
@@ -178,9 +177,8 @@ def set_environment_variable(request):
         if thr == None:
             pass
         elif 0 <= int(thr) <= 100:
-            setattr(settings, 'STANDARD_MARGIN_THR', int(thr) / 100)    
+            setattr(tasks, 'threshold', int(thr) / 100)    
         else:
             return Response({'400': 'Bad request'})
 
         return Response({"200", f"ok"})
-    ...
