@@ -42,21 +42,27 @@ def auto_get_result() -> None:
         return -1
     running = True
     try:
-        # 1. 모델 실행
-        dir_path = f"{model_root}/mlcc_datasets/val_test"
-        entries = os.scandir(dir_path)
+        # 실행 경로 정하기
+        dir_path = f"{model_root}/mlcc_datasets/smb"
+        backup_path = f"{dir_path}/backup"
         dt = datetime.now().strftime('%y%m%d_%H%M%S')
-        length = 0
-        pic = []
-        for entry in entries:
-            length += 1
-            pic.append(entry.path)
+        first_create_time = datetime.now()
+        first_create_pc = ''
+        for path, subdirs, files in os.walk(dir_path):
+            for name in files:
+                if path[len(path)-3:len(path)-1] == 'pc':
+                    t = datetime.fromtimestamp(os.path.getctime(pathlib.PurePath(path, name)))
+                    if t < first_create_time:
+                        first_create_time = t
+                        first_create_pc = path[len(path)-3:]
 
-        if length != 0:
-            # 2. 데이터 적재
-            results = auto_run_model(dt) 
+        pc_name = first_create_pc
+
+        # 2. 모델 실행 및 결과파일 생성
+        if pc_name != '':
+            results = auto_run_model(dt, pc_name) 
             for i, result in enumerate(results):
-                save_result(i)
+                save_result(i, result, pc_name)
 
         # 3. DB 적재한 모델 원본 데이터 삭제
         entries = os.scandir(f'{model_root}/mlcc_datasets/val_test')
@@ -117,13 +123,10 @@ def manual_get_result() -> None:
     finally:
         running = False
 
-def save_result(i) -> None:
-    result = results[i]
+def save_result(i, result, pc_name) -> None:
     server_root = "C:/Users/user/Desktop/IITP/MLCC_BE"
     img_name = result['img_basename']
     seg_name = img_name[0:len(img_name)-4] + '_seg.jpg'
-    # seg_img = Image.fromarray(np.uint8(np.array(result['seg_img'])))
-    # seg_img.save(dir_path + '/' + seg_name)
     img_dir = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}"
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
@@ -133,11 +136,9 @@ def save_result(i) -> None:
     s = np.array(result['seg_img'])
     cv2.imwrite( f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}/{img_name}", r)
     cv2.imwrite( f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}/{seg_name}", s)
-    #shutil.copyfile(dir_path + '/' + img_name, f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}/{img_name}")
-    #shutil.copyfile(dir_path + '/' + seg_name, f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}/{seg_name}")
-    start = time.time()
     d = Data()
     d.name = result['img_basename'][0:len(img_name)-4],
+    d.source_pc = pc_name
     d.original_image = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}/{result['img_basename'][0:len(result['img_basename'])-4]}/{img_name}"
     d.segmentation_image = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}/{result['img_basename'][0:len(result['img_basename'])-4]}/{seg_name}"
     d.created_date = date.today()
@@ -169,7 +170,6 @@ def save_result(i) -> None:
         total_min_ratio = min(total_min_ratio, qa_result['min_margin_ratio']) * 100
     d.margin_ratio = total_min_ratio
     d.save()
-    print(time.time()-start)
 
 
 

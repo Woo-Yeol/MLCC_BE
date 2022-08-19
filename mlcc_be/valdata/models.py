@@ -7,12 +7,10 @@ def data_directory_path(instance, filename):
     return 'data/{0}/{1}'.format(instance.name, filename)
 
 # Create your models here.
-class State(models.Model):
-    mode = models.CharField(max_length=10)
-    threshold = models.FloatField()
 
 class Data(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
+    source_pc = models.CharField(max_length=10)
     original_image = models.ImageField(
         upload_to=data_directory_path, null=True, blank=True)
     segmentation_image = models.ImageField(
