@@ -14,7 +14,7 @@ from PIL import Image
 from .models import Data, Bbox, Margin, ManualLog, State
 from django.core.files.images import ImageFile
 from datetime import datetime, date, timedelta
-import subprocess 
+from django.shortcuts import get_object_or_404 
 sys.path.append("C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system")
 from mlcc_django import auto_run_model, manual_run_model
 from mlcc_systemkits.mlcc_system import MLCC_SYSTEM
@@ -65,9 +65,10 @@ def auto_get_result() -> None:
                 save_result(i, result, pc_name)
 
         # 3. DB 적재한 모델 원본 데이터 삭제
-        entries = os.scandir(f'{model_root}/mlcc_datasets/val_test')
+        entries = os.scandir(f'{model_root}/mlcc_datasets/smb/{pc_name}')
         for entry in entries:
-            os.remove(entry.path)
+            if not entry.is_dir():
+                os.remove(entry.path)
 
     # semaphore unlock
     finally:
@@ -130,23 +131,27 @@ def save_result(i, result, pc_name) -> None:
     img_dir = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}"
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
-    os.makedirs(f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}")
-    
+    os.makedirs(f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}", exist_ok=True)
     r = np.array(result['img0'])
     s = np.array(result['seg_img'])
     cv2.imwrite( f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}/{img_name}", r)
     cv2.imwrite( f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}/{seg_name}", s)
-    d = Data()
-    d.name = result['img_basename'][0:len(img_name)-4],
-    d.source_pc = pc_name
-    d.original_image = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}/{result['img_basename'][0:len(result['img_basename'])-4]}/{img_name}"
-    d.segmentation_image = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}/{result['img_basename'][0:len(result['img_basename'])-4]}/{seg_name}"
-    d.created_date = date.today()
-    d.cvat_url = f'http://localhost:8080/tasks/1/jobs/1?frame={i}'
-    d.save()
+    
+    if Data.objects.filter(name = result['img_basename'][0:len(img_name)-4]).exists():
+        return -1
+    d, created = Data.objects.get_or_create(
+        name = result['img_basename'][0:len(img_name)-4],
+        source_pc = pc_name,
+        original_image = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}/{result['img_basename'][0:len(result['img_basename'])-4]}/{img_name}",
+        segmentation_image = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}/{result['img_basename'][0:len(result['img_basename'])-4]}/{seg_name}",
+        created_date = date.today(),
+        margin_ratio = 0,
+        cvat_url = f'http://localhost:8080/tasks/1/jobs/1?frame={i}'
+    )
+
     total_min_ratio = inf
     for bbox_id, qa_result in enumerate(result['qa_result_list']):
-        b = Bbox.objects.create(
+        b, created = Bbox.objects.get_or_create(
             name=result['img_basename'][0:len(result['img_basename'])-4] + '_bbox_' + str(bbox_id+1),
             data=d,
             min_margin_ratio=qa_result['min_margin_ratio']*100,
@@ -155,9 +160,8 @@ def save_result(i, result, pc_name) -> None:
             box_x = result['bboxes'][bbox_id][0],
             box_y = result['bboxes'][bbox_id][1],
         )
-        b.save()
         for i in range(len(qa_result['first_lst'])):
-            m = Margin.objects.create(
+            m, created = Margin.objects.get_or_create(
                 name=result['img_basename'][0:len(result['img_basename'])-4] + '_bbox_' + str(bbox_id+1) + '_magrin_' + str(i+1),
                 bbox=b,
                 margin_x = result['bboxes'][bbox_id][0] + qa_result['first_lst'][i],
@@ -166,7 +170,6 @@ def save_result(i, result, pc_name) -> None:
                 margin_ratio = qa_result['margin_ratio'][i]*100,
                 margin_width = qa_result['last_lst'][i]-qa_result['first_lst'][i],
             )
-            m.save()
         total_min_ratio = min(total_min_ratio, qa_result['min_margin_ratio']) * 100
     d.margin_ratio = total_min_ratio
     d.save()
