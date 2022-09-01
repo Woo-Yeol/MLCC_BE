@@ -23,7 +23,7 @@ from multiprocessing import Pool
 import typing
 # db에 데이터 넣을 때 역순으로 넣기
 
-running = False
+running: bool = False
 results = []
 model_root = "C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system"
 OriginalFunc = typing.Callable[..., typing.Any]
@@ -34,8 +34,8 @@ def model_lock(func: OriginalFunc) -> DecoratedFunc:
         global running
         if running:
             return -1
-        running: bool = True
-        func()                              
+        running = True
+        func()                        
         running = False
     return wrapper
 
@@ -73,7 +73,7 @@ def auto_get_result() -> None:
 
         # 모델 실행 및 결과파일 생성
         if pc_name != '':
-            results = auto_run_model(dt, pc_name) 
+            results = auto_run_model(dt, pc_name)
             for i, result in enumerate(results):
                 save_result(i, result, pc_name)
 
@@ -133,7 +133,6 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
     s = np.array(result['seg_img'])
     cv2.imwrite( f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}/{img_name}", r)
     cv2.imwrite( f"{img_dir}/{result['img_basename'][0:len(result['img_basename'])-4]}/{seg_name}", s)
-    
     if Data.objects.filter(name = result['img_basename'][0:len(img_name)-4]).exists():
         return -1
     d, created = Data.objects.get_or_create(
