@@ -26,6 +26,33 @@ import typing
 running = False
 results = []
 model_root = "C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system"
+OriginalFunc = typing.Callable[..., typing.Any]
+DecoratedFunc = typing.Callable[..., typing.Any]
+
+def model_lock(func: OriginalFunc) -> DecoratedFunc:
+    def wrapper():
+        global running
+        if running:
+            return -1
+        running: bool = True
+        func()                              
+        running = False
+    return wrapper
+
+# 모델 경로 설정 함수
+def set_input_dir(dir_path: str) -> str:
+    first_create_time = datetime.now()
+    first_create_pc = ''
+    for path, subdirs, files in os.walk(dir_path):
+        for name in files:
+            if path[len(path)-3:len(path)-1] == 'pc':
+                t = datetime.fromtimestamp(os.path.getctime(pathlib.PurePath(path, name)))
+                if t < first_create_time:
+                    first_create_time = t
+                    first_create_pc = path[len(path)-3:]
+    pc_name = first_create_pc
+
+    return pc_name
 
 @shared_task
 def get_model_output() -> None:
@@ -36,29 +63,15 @@ def get_model_output() -> None:
         manual_get_result()
 
 
+@model_lock
 def auto_get_result() -> None:
-    global running
-    if running:
-        return -1
-    running = True
     try:
         # 실행 경로 정하기
-        dir_path = f"{model_root}/mlcc_datasets/smb"
-        backup_path = f"{dir_path}/backup"
+        dir_path: str = f"{model_root}/mlcc_datasets/smb"
         dt = datetime.now().strftime('%y%m%d_%H%M%S')
-        first_create_time = datetime.now()
-        first_create_pc = ''
-        for path, subdirs, files in os.walk(dir_path):
-            for name in files:
-                if path[len(path)-3:len(path)-1] == 'pc':
-                    t = datetime.fromtimestamp(os.path.getctime(pathlib.PurePath(path, name)))
-                    if t < first_create_time:
-                        first_create_time = t
-                        first_create_pc = path[len(path)-3:]
+        pc_name = set_input_dir(dir_path)
 
-        pc_name = first_create_pc
-
-        # 2. 모델 실행 및 결과파일 생성
+        # 모델 실행 및 결과파일 생성
         if pc_name != '':
             results = auto_run_model(dt, pc_name) 
             for i, result in enumerate(results):
@@ -70,33 +83,18 @@ def auto_get_result() -> None:
             if not entry.is_dir():
                 os.remove(entry.path)
 
-    # semaphore unlock
-    finally:
-        running = False
+    except:
+        print("Failed run model")
 
+@model_lock
 def manual_get_result() -> None:
-    global running
-    if running:
-        return -1
-    running = True
     try:   
         # 실행 경로 정하기
         dir_path = f"{model_root}/mlcc_datasets/smb"
         backup_path = f"{dir_path}/backup"
         dt = datetime.now().strftime('%y%m%d_%H%M%S')
-        first_create_time = datetime.now()
-        first_create_pc = ''
-        for path, subdirs, files in os.walk(dir_path):
-            for name in files:
-                if path[len(path)-3:len(path)-1] == 'pc':
-                    t = datetime.fromtimestamp(os.path.getctime(pathlib.PurePath(path, name)))
-                    if t < first_create_time:
-                        first_create_time = t
-                        first_create_pc = path[len(path)-3:]
+        pc_name = set_input_dir(dir_path)
 
-        pc_name = first_create_pc
-        entries = os.scandir(dir_path)
-        length = 0
         # 2. 모델 실행 및 결과파일 생성
         if pc_name != '':
             global results
@@ -120,11 +118,10 @@ def manual_get_result() -> None:
                 log.dt = datetime.now()
                 log.save()
 
-    # semaphore unlock
-    finally:
-        running = False
+    except:
+        print("Failed run model")
 
-def save_result(i, result, pc_name) -> None:
+def save_result(i: int, result: dict, pc_name: str) -> None:
     server_root = "C:/Users/user/Desktop/IITP/MLCC_BE"
     img_name = result['img_basename']
     seg_name = img_name[0:len(img_name)-4] + '_seg.jpg'
