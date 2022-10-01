@@ -13,7 +13,7 @@ from mmcv import Config
 from mlcc_systemkits.mlcc_system import MLCC_SYSTEM
 from mlcc_systemkits.utils import load_img_paths, NumpyEncoder
 
-def auto_run_model(date, pc_name):
+def auto_run_model(date, pc_name, thr):
     args = {
         'det_cfg': 'C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system/work_dirs/det/mask_rcnn_r50_fpn_1x_mlcc_refine/mask_rcnn_r50_fpn_1x_mlcc_refine.py',
         'det_cp': 'C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system/work_dirs/det/mask_rcnn_r50_fpn_2x_mlcc_refine/latest.pth' ,
@@ -24,7 +24,7 @@ def auto_run_model(date, pc_name):
         'score_thr': 0.30,
         'remove_edge_bbox': True,
         'refine_ratio': 0.06,
-        'margin_thr': 0.75,
+        'margin_thr': thr,
         'cut_off': 0,
         'name': date,
         'project': 'mmcl_results'
