@@ -3,6 +3,7 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView
 from django.shortcuts import get_object_or_404 as _get_object_or_404
 from django.core.exceptions import ValidationError
 from django.http import Http404
+from django.db import transaction
 
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.views import APIView
@@ -13,9 +14,12 @@ from asgiref.sync import sync_to_async
 from datetime import datetime, timedelta, date
 from django.db.models import Avg
 
-from .models import Data, Bbox, ManualLog, Margin, State
+from .models import Data, Bbox, ManualLog, Margin, State, Modelinfo
 from .serializers import DataSerializer, BboxSerializer, ManualLogSerializer, MarginSerializer
 from celery.schedules import crontab
+from .tasks import model_lock
+from mlcc_systemkits.self_train import main as self_train_model
+import os, shutil
 # Main Page
 
 
@@ -189,3 +193,18 @@ def set_environment_variable(request):
             return Response({'400': 'Bad request'})
 
         return Response({"200", f"ok"})
+
+
+@transaction.atomic
+@model_lock
+@sync_to_async
+def self_train():
+    model_info = self_train_model()
+    for path, acc in model_info:
+        Modelinfo.objects.create(path = path, acc = acc)
+    
+    low_acc_models = Modelinfo.objects.all().order_by('-acc')[10:]
+    for model in low_acc_models:
+        path = model.path
+        if os.path.exists(path):
+            shutil.rmtree(path)

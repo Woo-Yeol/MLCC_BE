@@ -17,7 +17,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from .views import DataListView, BboxListView, MarginListView, DataRetrieveView, BboxRetrieveView, MarginRetrieveView, ManualLogListView, main, detail, set_schedule, set_thr, set_environment_variable
+from .views import DataListView, BboxListView, MarginListView, DataRetrieveView, BboxRetrieveView, MarginRetrieveView, ManualLogListView, main, detail, self_train, set_schedule, set_thr, set_environment_variable
 
 
 urlpatterns = [
@@ -33,4 +33,5 @@ urlpatterns = [
     path('bbox/<str:pk>', BboxRetrieveView.as_view()),
     path('margin/<str:pk>', MarginRetrieveView.as_view()),
     path('setting', set_environment_variable),
+    path('selftrain', self_train),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

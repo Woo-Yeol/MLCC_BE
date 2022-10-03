@@ -9,8 +9,9 @@ from django.conf import settings
 from django.core.files.images import ImageFile
 from django.shortcuts import get_object_or_404 
 from django.db import transaction
+from asgiref.sync import sync_to_async
 sys.path.append("C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system")
-from mlcc_django import auto_run_model, manual_run_model, self_train_model
+from mlcc_django import auto_run_model, manual_run_model
 from mlcc_systemkits.mlcc_system import MLCC_SYSTEM
 from celery import shared_task
 # db에 데이터 넣을 때 역순으로 넣기
@@ -201,6 +202,8 @@ def reset_data():
 
 # 자가학습 모델 실행 및 pth 관리
 @transaction.atomic
+@model_lock
+@sync_to_async
 def self_train():
     model_info = self_train_model()
     for path, acc in model_info:
