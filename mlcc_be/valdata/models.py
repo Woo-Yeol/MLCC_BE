@@ -63,5 +63,5 @@ class ManualLog(models.Model):
         return self.filename
 
 class Modelinfo(models.Model):
-    pth_path = models.CharField(max_length=50)
+    path = models.CharField(max_length=50)
     acc = models.FloatField()
