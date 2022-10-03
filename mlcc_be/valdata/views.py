@@ -18,8 +18,10 @@ from .models import Data, Bbox, ManualLog, Margin, State, Modelinfo
 from .serializers import DataSerializer, BboxSerializer, ManualLogSerializer, MarginSerializer
 from celery.schedules import crontab
 from .tasks import model_lock
-from mlcc_systemkits.self_train import main as self_train_model
-import os, shutil
+import os, shutil, sys
+sys.path.append("C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system")
+from mlcc_self_train import main as self_train_model
+
 # Main Page
 
 
