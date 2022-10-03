@@ -4,13 +4,13 @@ import numpy as np
 from math import inf
 from PIL import Image
 from datetime import datetime, date, timedelta
-from .models import Data, Bbox, Margin, ManualLog, State
+from .models import Data, Bbox, Margin, ManualLog, State, Modelinfo
 from django.conf import settings
 from django.core.files.images import ImageFile
 from django.shortcuts import get_object_or_404 
 from django.db import transaction
 sys.path.append("C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system")
-from mlcc_django import auto_run_model, manual_run_model
+from mlcc_django import auto_run_model, manual_run_model, self_train_model
 from mlcc_systemkits.mlcc_system import MLCC_SYSTEM
 from celery import shared_task
 # db에 데이터 넣을 때 역순으로 넣기
@@ -197,3 +197,21 @@ def reset_data():
         if os.path.exists(path):
             shutil.rmtree(path)
             os.mkdir(path)
+
+
+# 자가학습 모델 실행 및 pth 관리
+@transaction.atomic
+def self_train():
+    model_info = self_train_model()
+    for path, acc in model_info:
+        Modelinfo.objects.create(path = path, acc = acc)
+    
+    low_acc_models = Modelinfo.objects.all().order_by('-acc')[10:]
+    for model in low_acc_models:
+        path = model.path
+        if os.path.exists(path):
+            shutil.rmtree(path)
+
+    
+    
+

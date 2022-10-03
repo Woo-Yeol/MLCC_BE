@@ -61,3 +61,7 @@ class ManualLog(models.Model):
 
     def __str__(self):
         return self.filename
+
+class Modelinfo(models.Model):
+    pth_path = models.CharField(max_length=50)
+    acc = models.FloatField()
