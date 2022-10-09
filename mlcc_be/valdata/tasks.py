@@ -4,7 +4,7 @@ import numpy as np
 from math import inf
 from PIL import Image
 from datetime import datetime, date, timedelta
-from .models import Data, Bbox, Margin, ManualLog, State, Modelinfo
+from .models import Data, Bbox, Margin, ManualLog, State, InferencePath
 from django.conf import settings
 from django.core.files.images import ImageFile
 from django.shortcuts import get_object_or_404 

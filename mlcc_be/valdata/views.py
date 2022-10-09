@@ -15,7 +15,7 @@ from asgiref.sync import sync_to_async
 from datetime import datetime, timedelta, date
 from django.db.models import Avg
 
-from .models import Data, Bbox, ManualLog, Margin, State, Modelinfo
+from .models import Data, Bbox, ManualLog, Margin, State, InferencePath
 from .serializers import DataSerializer, BboxSerializer, ManualLogSerializer, MarginSerializer
 from celery.schedules import crontab
 from .tasks import model_lock
@@ -204,8 +204,8 @@ def self_train(request):
                 break
         try:
             # 자가학습 실행
-            os.system("python C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system mlcc_self_train.py")
-            os.system("sh C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system/run_self_train.sh")
+            os.system("python C:\\Users\\user\\Desktop\\IITP\\mmcv_laminate_alignment_system\\mlcc_self_train_train.py")
+            # os.system("sh C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system/run_self_train.sh")
             return Response({"200", f"ok"})
         except:
             return Response({'400': 'Bad request'})
@@ -219,14 +219,14 @@ def eval_self_train(request):
     for path, acc in model_info:
         name = path.split('seg')[1].split("\\")
         name = f"{name[0]}_{name[1]}"
-        Modelinfo.objects.create(name = name, path = path, acc = acc)
+        InferencePath.objects.create(name = name, path = path, acc = acc)
     # 기본 inference 모델 설정
-    highest = Modelinfo.objects.all().order_by('-acc')[0]
+    highest = InferencePath.objects.all().order_by('-acc')[0]
     s = State.objects.all()[0]
     s.target_model = highest.name
-    if Modelinfo.objects.all().count() > 10:
+    if InferencePath.objects.all().count() > 10:
         # 하위 모델 삭제
-        models = Modelinfo.objects.all().order_by('-acc')[10:]
+        models = InferencePath.objects.all().order_by('-acc')[10:]
         for model in models:
             path = model.path
             if os.path.exists(path):

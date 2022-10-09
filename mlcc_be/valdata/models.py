@@ -11,13 +11,13 @@ class State(models.Model):
     mode = models.CharField(max_length=10)
     threshold = models.FloatField()
     work = models.BooleanField(default=False)
-    progress = models.IntegerField()
-    target_model = models.CharField(max_length=30)
+    progress = models.IntegerField(default=0)
+    target_model = models.CharField(max_length=30, default='')
 
 
 class Data(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
-    source_pc = models.CharField(max_length=10)
+    source_pc = models.CharField(max_length=10, null=True, blank=True)
     original_image = models.ImageField(
         upload_to=data_directory_path, null=True, blank=True)
     segmentation_image = models.ImageField(
@@ -65,7 +65,7 @@ class ManualLog(models.Model):
     def __str__(self):
         return self.filename
 
-class Modelinfo(models.Model):
+class InferencePath(models.Model):
     name = models.CharField(max_length=50)
     path = models.CharField(max_length=50)
     acc = models.FloatField()
