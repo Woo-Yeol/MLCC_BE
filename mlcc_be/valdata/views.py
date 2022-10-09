@@ -1,3 +1,4 @@
+import time
 from django.conf import settings
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from django.shortcuts import get_object_or_404 as _get_object_or_404
@@ -20,7 +21,7 @@ from celery.schedules import crontab
 from .tasks import model_lock
 import os, shutil, sys
 sys.path.append("C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system")
-from mlcc_self_train import main as self_train_model
+from mlcc_self_train_eval import main as self_train_eval
 
 # Main Page
 
@@ -55,8 +56,6 @@ def main(request):
         "Error": error
     }
     return Response(result, headers={"description": "SUCCESS"})
-
-# Detail
 
 
 @api_view(['GET'])
@@ -98,8 +97,6 @@ def detail(request, name):
 
     return Response(result, headers={"description": "SUCCESS"})
 
-# Data
-
 
 class DataListView(ListCreateAPIView):
     def get_normal_queryset(self):
@@ -118,8 +115,6 @@ class DataRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Data.objects.all()
     serializer_class = DataSerializer
 
-# Bbox
-
 
 class BboxListView(ListCreateAPIView):
     queryset = Bbox.objects.all()
@@ -129,9 +124,6 @@ class BboxListView(ListCreateAPIView):
 class BboxRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Bbox.objects.all()
     serializer_class = BboxSerializer
-    # lookup_fields = ['data']
-
-# Margin
 
 
 class MarginListView(ListCreateAPIView):
@@ -142,10 +134,7 @@ class MarginListView(ListCreateAPIView):
 class MarginRetrieveView(RetrieveUpdateDestroyAPIView):
     queryset = Margin.objects.all()
     serializer_class = MarginSerializer
-    # lookup_fields = ['bbox']
-
-
-# ManualLog
+    
 
 class ManualLogListView(ListCreateAPIView):
     queryset = ManualLog.objects.all()
@@ -165,7 +154,7 @@ def set_thr(request):
     if request.method == 'GET':
         #thr = int(getattr(tasks, 'threshold') * 100)
         thr = State.objects.all()[0].threshold * 100
-        return Response({"threshold": thr})
+        return Response({thr})
 
 @api_view(['POST'])
 def set_environment_variable(request):
@@ -197,16 +186,74 @@ def set_environment_variable(request):
         return Response({"200", f"ok"})
 
 
-@transaction.atomic
-@model_lock
-@sync_to_async
-def self_train():
-    model_info = self_train_model()
-    for path, acc in model_info:
-        Modelinfo.objects.create(path = path, acc = acc)
+@api_view(['GET', 'POST'])
+def self_train(request):
+    if request.method == 'GET':
+        s = State.objects.all()[0]
+        progress = s.progress
+        return Response({"progress": progress})
     
-    low_acc_models = Modelinfo.objects.all().order_by('-acc')[10:]
-    for model in low_acc_models:
-        path = model.path
-        if os.path.exists(path):
-            shutil.rmtree(path)
+    if request.method == 'POST':
+        request.query_params.get('rate')
+        # celery 구동 중지 기다리기
+        while True:
+            s = State.objects.all()[0]
+            if s.work:
+                time.sleep(1)
+            else:
+                break
+        try:
+            # 자가학습 실행
+            os.system("python C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system mlcc_self_train.py")
+            os.system("sh C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system/run_self_train.sh")
+            return Response({"200", f"ok"})
+        except:
+            return Response({'400': 'Bad request'})
+
+        
+@transaction.atomic
+@api_view(['GET'])
+def eval_self_train(request):
+    # 모델 저장
+    model_info = self_train_eval()
+    for path, acc in model_info:
+        name = path.split('seg')[1].split("\\")
+        name = f"{name[0]}_{name[1]}"
+        Modelinfo.objects.create(name = name, path = path, acc = acc)
+    # 기본 inference 모델 설정
+    highest = Modelinfo.objects.all().order_by('-acc')[0]
+    s = State.objects.all()[0]
+    s.target_model = highest.name
+    if Modelinfo.objects.all().count() > 10:
+        # 하위 모델 삭제
+        models = Modelinfo.objects.all().order_by('-acc')[10:]
+        for model in models:
+            path = model.path
+            if os.path.exists(path):
+                shutil.rmtree(path)
+            
+    # celery 구동 재개
+    s = State.objects.all()[0]
+    s.work = False
+    s.save()
+    return Response({"200", f"ok"})
+
+
+@api_view(['GET', 'POST'])
+def inference_model(request): # 현재모델, 모델선택
+    if request.method == 'GET':
+        target_model = State.objects.all()[0].target_model
+        return Response({target_model})
+    if request.method == 'POST':
+        name = request.query_params.get('name')
+        s = State.objects.all()[0]
+        s.target_model = name
+        s.save()
+
+        
+# 전체 이미지 중 랜덤..?
+@api_view(['GET'])
+def sample_img(request):
+    num = request.query_params.get('num')
+    ...
+

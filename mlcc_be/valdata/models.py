@@ -10,6 +10,9 @@ def data_directory_path(instance, filename):
 class State(models.Model):
     mode = models.CharField(max_length=10)
     threshold = models.FloatField()
+    work = models.BooleanField(default=False)
+    progress = models.IntegerField()
+    target_model = models.CharField(max_length=30)
 
 
 class Data(models.Model):
@@ -63,5 +66,6 @@ class ManualLog(models.Model):
         return self.filename
 
 class Modelinfo(models.Model):
+    name = models.CharField(max_length=50)
     path = models.CharField(max_length=50)
     acc = models.FloatField()

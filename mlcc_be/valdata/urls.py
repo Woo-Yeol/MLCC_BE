@@ -17,7 +17,10 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from .views import DataListView, BboxListView, MarginListView, DataRetrieveView, BboxRetrieveView, MarginRetrieveView, ManualLogListView, main, detail, self_train, set_schedule, set_thr, set_environment_variable
+from .views import DataListView, BboxListView, MarginListView, DataRetrieveView,\
+     BboxRetrieveView, MarginRetrieveView, ManualLogListView, \
+    main, detail, self_train, set_schedule, set_thr, set_environment_variable, \
+        inference_model, eval_self_train, sample_img
 
 
 urlpatterns = [
@@ -33,5 +36,10 @@ urlpatterns = [
     path('bbox/<str:pk>', BboxRetrieveView.as_view()),
     path('margin/<str:pk>', MarginRetrieveView.as_view()),
     path('setting', set_environment_variable),
-    path('selftrain', self_train),
+    path('learning', self_train),
+    path('learning/eval', eval_self_train),
+    path('model', inference_model),
+    path('model/sampleimg', sample_img),
+    
+    
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

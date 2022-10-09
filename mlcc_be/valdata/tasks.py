@@ -26,12 +26,14 @@ DecoratedFunc = typing.Callable[..., typing.Any]
 # running Flag
 def model_lock(func: OriginalFunc) -> DecoratedFunc:
     def wrapper():
-        global running
-        if running:
+        s = State.objects.all()[0]
+        if s.work:
             return -1
-        running = True
+        s.work = True
+        s.save()
         func()                        
-        running = False
+        s.work = False
+        s.save()
     return wrapper
 
 # 모델 경로 설정
@@ -198,22 +200,6 @@ def reset_data():
         if os.path.exists(path):
             shutil.rmtree(path)
             os.mkdir(path)
-
-
-# 자가학습 모델 실행 및 pth 관리
-@transaction.atomic
-@model_lock
-@sync_to_async
-def self_train():
-    model_info = self_train_model()
-    for path, acc in model_info:
-        Modelinfo.objects.create(path = path, acc = acc)
-    
-    low_acc_models = Modelinfo.objects.all().order_by('-acc')[10:]
-    for model in low_acc_models:
-        path = model.path
-        if os.path.exists(path):
-            shutil.rmtree(path)
 
     
     
