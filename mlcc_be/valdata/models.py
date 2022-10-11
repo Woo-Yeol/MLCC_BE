@@ -9,9 +9,9 @@ def data_directory_path(instance, filename):
 # Create your models here.
 class State(models.Model):
     mode = models.CharField(max_length=10)
-    threshold = models.FloatField()
+    threshold = models.FloatField(default=85)
     work = models.BooleanField(default=False)
-    progress = models.IntegerField(default=0)
+    progress = models.IntegerField(default=100)
     target_model = models.CharField(max_length=30, default='')
 
 
@@ -69,3 +69,6 @@ class InferencePath(models.Model):
     name = models.CharField(max_length=50)
     path = models.CharField(max_length=50)
     acc = models.FloatField()
+
+    def __str__(self):
+        return self.name + ': ' + self.acc

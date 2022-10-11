@@ -1,4 +1,5 @@
 import time
+import argparse
 from django.conf import settings
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from django.shortcuts import get_object_or_404 as _get_object_or_404
@@ -21,7 +22,8 @@ from celery.schedules import crontab
 from .tasks import model_lock
 import os, shutil, sys
 sys.path.append("C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system")
-from mlcc_self_train_eval import main as self_train_eval
+from mlcc_self_train_eval import self_train_eval
+
 
 # Main Page
 
@@ -191,7 +193,7 @@ def self_train(request):
     if request.method == 'GET':
         s = State.objects.all()[0]
         progress = s.progress
-        return Response({"progress": progress})
+        return Response({progress})
     
     if request.method == 'POST':
         request.query_params.get('rate')
@@ -201,6 +203,9 @@ def self_train(request):
             if s.work:
                 time.sleep(1)
             else:
+                s.work = True
+                s.progress = 0
+                s.save()
                 break
         try:
             # 자가학습 실행
@@ -218,7 +223,7 @@ def eval_self_train(request):
     model_info = self_train_eval()
     for path, acc in model_info:
         name = path.split('seg')[1].split("\\")
-        name = f"{name[0]}_{name[1]}"
+        name = f"{name[2]}_{name[1]}"
         InferencePath.objects.create(name = name, path = path, acc = acc)
     # 기본 inference 모델 설정
     highest = InferencePath.objects.all().order_by('-acc')[0]

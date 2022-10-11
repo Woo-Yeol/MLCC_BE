@@ -69,11 +69,17 @@ def auto_get_result() -> None:
         input_dir_path: str = f"{model_root}/mlcc_datasets/smb"
         dt = datetime.now().strftime('%y%m%d_%H%M%S')
         pc_name = set_input_dir(input_dir_path)
+        target_model = State.objects.all()[0].target_model
+        if target_model == 'auto':
+            seg_cp_pth = InferencePath.objects.all().order_by("-acc")[0].path
+        else:
+            seg_cp_pth = InferencePath.objects.get(name=target_model).path
+        
 
         # 모델 실행 및 결과파일 생성
         if pc_name != '':
             threshold = State.objects.all()[0].threshold
-            results = auto_run_model(dt, pc_name, threshold)
+            results = auto_run_model(seg_cp_pth, dt, pc_name, threshold)
             for i, result in enumerate(results):
                 save_result(i, result, pc_name, threshold)
 
