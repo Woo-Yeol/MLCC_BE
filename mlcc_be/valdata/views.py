@@ -50,9 +50,11 @@ def main(request):
                             'request': request}).data
     error = DataSerializer(error, many=True, context={
         'request': request}).data
+    learning_status = State.objects.all()[0].progress
     result = {
         "Normal": normal,
-        "Error": error
+        "Error": error,
+        "Learning_Status": learning_status
     }
     return Response(result, headers={"description": "SUCCESS"})
 
