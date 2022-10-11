@@ -1,4 +1,3 @@
-import time
 from django.conf import settings
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from django.shortcuts import get_object_or_404 as _get_object_or_404
@@ -19,7 +18,7 @@ from .models import Data, Bbox, ManualLog, Margin, State, InferencePath
 from .serializers import DataSerializer, BboxSerializer, ManualLogSerializer, MarginSerializer
 from celery.schedules import crontab
 from .tasks import model_lock
-import os, shutil, sys
+import os, shutil, sys, time, random
 sys.path.append("C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system")
 from mlcc_self_train_eval import main as self_train_eval
 
@@ -255,5 +254,16 @@ def inference_model(request): # 현재모델, 모델선택
 @api_view(['GET'])
 def sample_img(request):
     num = request.query_params.get('num')
-    ...
+    if num == "0":
+        num = random.randint(1, 10)
+    else:
+        num = int(num)
+    models = InferencePath.objects.all().values("name", "path")
+    res = {}
+    for model in models:
+        name = model["name"]
+        path = model["path"]
+        res[name] = path + f"{num}.jpg"
+
+    return Response(res)
 
