@@ -68,7 +68,7 @@ class ManualLog(models.Model):
 class InferencePath(models.Model):
     name = models.CharField(max_length=50)
     path = models.CharField(max_length=50)
-    acc = models.FloatField()
+    acc = models.IntegerField()
 
     def __str__(self):
-        return self.name + ': ' + self.acc
+        return self.name + ': ' + str(self.acc)
