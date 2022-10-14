@@ -239,6 +239,7 @@ def eval_self_train(request):
             
     # celery 구동 재개
     s = State.objects.all()[0]
+    s.progress = 100
     s.work = False
     s.save()
     return Response({"200", f"ok"})
@@ -260,16 +261,19 @@ def inference_model(request): # 현재모델, 모델선택
 @api_view(['GET'])
 def sample_img(request):
     num = request.query_params.get('num')
+    if num == None:
+        num = "0"
     if num == "0":
         num = random.randint(1, 10)
     else:
         num = int(num)
-    models = InferencePath.objects.all().values("name", "path")
+    models = InferencePath.objects.all().order_by('-acc')[:6].values("name", "path")
     res = {}
     for model in models:
         name = model["name"]
         path = model["path"]
-        res[name] = path + f"{num}.jpg"
+        if path == "None":
+            path = "D:\\work_dir\\seg\\default_model"
+        res[name] = f"{path}\\{num}.jpg"
 
     return Response(res)
-
