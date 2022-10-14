@@ -246,7 +246,7 @@ def inference_model(request): # 현재모델, 모델선택
         target_model = State.objects.all()[0].target_model
         return Response({target_model})
     if request.method == 'POST':
-        name = request.query_params.get('name')
+        name = request.data.get('name')
         s = State.objects.all()[0]
         s.target_model = name
         s.save()
