@@ -255,6 +255,7 @@ def inference_model(request): # 현재모델, 모델선택
         s = State.objects.all()[0]
         s.target_model = name
         s.save()
+        return Response({"200", f"ok"})
 
         
 # 전체 이미지 중 랜덤..?
