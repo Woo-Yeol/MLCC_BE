@@ -28,12 +28,11 @@ def model_lock(func: OriginalFunc) -> DecoratedFunc:
     def wrapper():
         s = State.objects.all()[0]
         if s.work:
-            return -1
+            print("Model Working")
+            return
         s.work = True
         s.save()
         func()                        
-        s.work = False
-        s.save()
     return wrapper
 
 # 모델 경로 설정
@@ -46,7 +45,7 @@ def set_input_dir(input_dir_path: str) -> str:
                 t = datetime.fromtimestamp(os.path.getmtime(pathlib.PurePath(path, name)))
                 if t < first_create_time:
                     first_create_time = t
-                    first_create_pc = re.compile('pc[0-9]*').match(path).groups()
+                    first_create_pc = re.compile('pc[0-9]*').search(path).group()
                     print(first_create_pc) # test print
     pc_name = first_create_pc
 
@@ -69,22 +68,34 @@ def auto_get_result() -> None:
         input_dir_path: str = f"{model_root}/mlcc_datasets/smb"
         dt = datetime.now().strftime('%y%m%d_%H%M%S')
         pc_name = set_input_dir(input_dir_path)
+        target_model = State.objects.all()[0].target_model
+        if target_model == 'auto':
+            seg_cp_pth = InferencePath.objects.all().order_by("-acc")[0].path
+        else:
+            seg_cp_pth = InferencePath.objects.get(name=target_model).path
+        
 
         # 모델 실행 및 결과파일 생성
         if pc_name != '':
             threshold = State.objects.all()[0].threshold
-            results = auto_run_model(dt, pc_name, threshold)
+            results = auto_run_model(seg_cp_pth, dt, pc_name, threshold)
             for i, result in enumerate(results):
-                save_result(i, result, pc_name, threshold)
+                save_result(i, result, pc_name)
 
-        # 3. DB 적재한 모델 원본 데이터 삭제
-        entries = os.scandir(f'{model_root}/mlcc_datasets/smb/{pc_name}/input')
-        for entry in entries:
-            if not entry.is_dir():
-                os.remove(entry.path)
+            # 3. DB 적재한 모델 원본 데이터 삭제
+            entries = os.scandir(f'{model_root}/mlcc_datasets/smb/{pc_name}/input')
+            for entry in entries:
+                if not entry.is_dir():
+                    os.remove(entry.path)
+        else:
+            print("Folder empty")
 
-    except:
-        print("Failed run model")
+    except Exception as e:
+        print(e)
+    finally:
+        s = State.objects.all()[0]
+        s.work = False
+        s.save()
 
 @model_lock
 def manual_get_result() -> None:
@@ -127,10 +138,10 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
     if Data.objects.filter(name = result['img_basename'][0:len(result['img_basename'])-4]).exists():
         return -1
     # set img url
-    server_root = "C:/Users/user/Desktop/IITP/MLCC_BE"
+    server_root = "D:/"
     img_name = result['img_basename']
     seg_name = img_name[0:len(img_name)-4] + '_seg.jpg'
-    img_dir = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}"
+    img_dir = f"{server_root}/mlcc_datasets/smb/data/{datetime.now().strftime('%m.%d')}"
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
     os.makedirs(f"{img_dir}/{img_name[0:len(img_name)-4]}", exist_ok=True)
@@ -143,8 +154,8 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
     d, created = Data.objects.get_or_create(
         name = img_name[0:len(img_name)-4],
         source_pc = pc_name,
-        original_image = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}/{img_name[0:len(img_name)-4]}/{img_name}",
-        segmentation_image = f"{server_root}/mlcc_be/media/data/{datetime.now().strftime('%m.%d')}/{img_name[0:len(img_name)-4]}/{seg_name}",
+        original_image = f"{server_root}/mlcc_datasets/smb/data/{datetime.now().strftime('%m.%d')}/{img_name[0:len(img_name)-4]}/{img_name}",
+        segmentation_image = f"{server_root}/mlcc_datasets/smb/data/{datetime.now().strftime('%m.%d')}/{img_name[0:len(img_name)-4]}/{seg_name}",
         created_date = date.today(),
         margin_ratio = 0,
         cvat_url = f'http://localhost:8080/tasks/1/jobs/1?frame={i}'

@@ -20,8 +20,8 @@ class BboxSerializer(serializers.ModelSerializer):
 
 
 class DataSerializer(serializers.ModelSerializer):
-    original_image = serializers.ImageField(use_url=True)
-    segmentation_image = serializers.ImageField(use_url=True)
+    # original_image = serializers.ImageField(use_url=True)
+    # segmentation_image = serializers.ImageField(use_url=True)
     bbox = BboxSerializer(many=True, read_only=True)
 
     class Meta:
