@@ -196,7 +196,7 @@ def self_train(request):
         return Response({progress})
     
     if request.method == 'POST':
-        request.query_params.get('rate')
+        rate = request.query_params.get('rate')
         # celery 구동 중지 기다리기
         while True:
             s = State.objects.all()[0]
@@ -209,7 +209,7 @@ def self_train(request):
                 break
         try:
             # 자가학습 실행
-            os.system("python C:\\Users\\user\\Desktop\\IITP\\mmcv_laminate_alignment_system\\mlcc_self_train_train.py")
+            os.system(f"python C:\\Users\\user\\Desktop\\IITP\\mmcv_laminate_alignment_system\\mlcc_self_train_train.py --rate {rate}")
             # os.system("sh C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system/run_self_train.sh")
             return Response({"200", f"ok"})
         except:
@@ -222,16 +222,17 @@ def eval_self_train(request):
     # 모델 저장
     model_info = self_train_eval()
     for path, acc in model_info:
-        name = path.split('seg')[1].split("\\")
+        print(path)
+        name = path.split('seg')[1].split("/")
         name = f"{name[2]}_{name[1]}"
         InferencePath.objects.create(name = name, path = path, acc = acc)
     # 기본 inference 모델 설정
     highest = InferencePath.objects.all().order_by('-acc')[0]
     s = State.objects.all()[0]
     s.target_model = highest.name
-    if InferencePath.objects.all().count() > 10:
+    if InferencePath.objects.exclude(name = "Default").count() > 5:
         # 하위 모델 삭제
-        models = InferencePath.objects.all().order_by('-acc')[10:]
+        models = InferencePath.objects.exclude(name = "Default").order_by('-acc')[5:]
         for model in models:
             path = model.path
             if os.path.exists(path):
@@ -245,17 +246,22 @@ def eval_self_train(request):
     return Response({"200", f"ok"})
 
 
-@api_view(['GET', 'POST'])
-def inference_model(request): # 현재모델, 모델선택
+@api_view(['GET'])
+def curr_inference_model(request): # 현재모델, 모델선택
     if request.method == 'GET':
         target_model = State.objects.all()[0].target_model
         return Response({target_model})
+
+@api_view(['POST'])
+def set_inference_model(request, name): # 현재모델, 모델선택
     if request.method == 'POST':
-        name = request.data.get('name')
-        s = State.objects.all()[0]
-        s.target_model = name
-        s.save()
-        return Response({"200", f"ok"})
+        if InferencePath.objects.filter(name=name).exists():
+            s = State.objects.all()[0]
+            s.target_model = name
+            s.save()
+            return Response({"200", f"ok"})
+        else:
+            return Response({"405", f"Model not found"})
 
         
 # 전체 이미지 중 랜덤..?
@@ -268,13 +274,15 @@ def sample_img(request):
         num = random.randint(1, 10)
     else:
         num = int(num)
-    models = InferencePath.objects.all().order_by('-acc')[:6].values("name", "path")
+    models = InferencePath.objects.exclude(name="Dafault").order_by('-acc')[:5].values("name", "path")
+    default = InferencePath.objects.get(name="Default")
     res = {}
+    res[default.name] = f"{default.path}/{num}.jpg"
     for model in models:
         name = model["name"]
         path = model["path"]
         if path == "None":
-            path = "D:\\work_dir\\seg\\default_model"
-        res[name] = f"{path}\\{num}.jpg"
+            path = "D:/work_dir/seg/default_model"
+        res[name] = f"{path}/{num}.jpg"
 
     return Response(res)

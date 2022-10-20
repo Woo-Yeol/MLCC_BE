@@ -138,7 +138,7 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
     if Data.objects.filter(name = result['img_basename'][0:len(result['img_basename'])-4]).exists():
         return -1
     # set img url
-    server_root = "D:/"
+    server_root = "D:"
     img_name = result['img_basename']
     seg_name = img_name[0:len(img_name)-4] + '_seg.jpg'
     img_dir = f"{server_root}/mlcc_datasets/smb/data/{datetime.now().strftime('%m.%d')}"
@@ -211,6 +211,8 @@ def reset_data():
         if os.path.exists(path):
             shutil.rmtree(path)
             os.mkdir(path)
+            os.mkdir(f"{path}/input")
+            os.mkdir(f"{path}/results")
 
     
     
