@@ -149,7 +149,6 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
     s = np.array(result['seg_img'])
     cv2.imwrite(f"{img_dir}/{img_name[0:len(img_name)-4]}/{img_name}", r)
     cv2.imwrite(f"{img_dir}/{img_name[0:len(img_name)-4]}/{seg_name}", s)
-
     # Create data
     d, created = Data.objects.get_or_create(
         name = img_name[0:len(img_name)-4],
@@ -163,7 +162,9 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
 
     total_min_ratio = inf
     assessment = 'OK'
+
     for bbox_id, qa_result in enumerate(result['qa_result_list']):
+
         if qa_result['decision_result'] == False:
             assessment = 'NG'
         b, created = Bbox.objects.get_or_create(
@@ -185,9 +186,10 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
                 margin_ratio = qa_result['margin_ratio'][i]*100,
                 margin_width = qa_result['last_lst'][i]-qa_result['first_lst'][i],
             )
-        total_min_ratio = min(total_min_ratio, qa_result['min_margin_ratio']) * 100
         
-    d.margin_ratio = total_min_ratio
+        total_min_ratio = min(total_min_ratio, qa_result['min_margin_ratio'])
+    
+    d.margin_ratio = total_min_ratio * 100
     d.save()
 
     # Make save
@@ -213,7 +215,3 @@ def reset_data():
             os.mkdir(path)
             os.mkdir(f"{path}/input")
             os.mkdir(f"{path}/results")
-
-    
-    
-
