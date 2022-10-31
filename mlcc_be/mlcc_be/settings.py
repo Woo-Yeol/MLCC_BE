@@ -235,9 +235,9 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 MEDIA_ROOT = Path(BASE_DIR, 'media')
-MEDIA_ROOT = 'D:\mlcc_datasets\smb'
+MEDIA_ROOT = 'D:/'
 
-MEDIA_URL = 'D:\mlcc_datasets\smb/'
+MEDIA_URL = 'D:/'
 
 
 # Default primary key field type

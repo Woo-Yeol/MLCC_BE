@@ -276,13 +276,12 @@ def sample_img(request):
         num = int(num)
     models = InferencePath.objects.exclude(name="Dafault").order_by('-acc')[:5].values("name", "path")
     default = InferencePath.objects.get(name="Default")
+    root = "127.0.0.1:8000"
     res = {}
-    res[default.name] = f"{default.path}/{num}.jpg"
+    res[default.name] = f"{root}/{default.path}/{num}.jpg"
     for model in models:
         name = model["name"]
         path = model["path"]
-        if path == "None":
-            path = "D:/work_dir/seg/default_model"
-        res[name] = f"{path}/{num}.jpg"
+        res[name] = f"{root}/{path}/{num}.jpg"
 
     return Response(res)
