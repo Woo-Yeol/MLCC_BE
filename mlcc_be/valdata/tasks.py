@@ -78,8 +78,7 @@ def auto_get_result() -> None:
         # 모델 실행 및 결과파일 생성
         if pc_name != '':
             threshold = State.objects.all()[0].threshold
-            results = auto_run_model(seg_cp_pth, dt, pc_name, threshold)
-            for i, result in enumerate(results):
+            for i, result in enumerate(auto_run_model(seg_cp_pth, dt, pc_name, threshold)):
                 save_result(i, result, pc_name)
 
             # 3. DB 적재한 모델 원본 데이터 삭제
