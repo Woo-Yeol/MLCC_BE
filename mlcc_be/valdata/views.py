@@ -38,9 +38,9 @@ def main(request):
         queryset = queryset.filter(
             created_date__range=[date(from_date[0], from_date[1], from_date[2]), date(to_date[0], to_date[1], to_date[2])])
     else:
-        yesterday, today = datetime.today() - timedelta(1), datetime.today()
+        today = date.today()
         queryset = queryset.filter(
-            created_date__range=[yesterday, today])
+            created_date__range=[today, today])
     if threshold is None:
         threshold = 85
     # SELECT ... WHERE margin_ratio >= threshold
