@@ -175,16 +175,21 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
             box_x = result['bboxes'][bbox_id][0],
             box_y = result['bboxes'][bbox_id][1],
         )
+        margin_pool = []
         for i in range(len(qa_result['first_lst'])):
-            m, created = Margin.objects.get_or_create(
-                name=img_name[0:len(img_name)-4] + '_bbox_' + str(bbox_id+1) + '_magrin_' + str(i+1),
-                bbox=b,
-                margin_x = result['bboxes'][bbox_id][0] + qa_result['first_lst'][i],
-                margin_y = result['bboxes'][bbox_id][1] + i,
-                real_margin = qa_result['real_margin'],
-                margin_ratio = qa_result['margin_ratio'][i]*100,
-                margin_width = qa_result['last_lst'][i]-qa_result['first_lst'][i],
-            )
+            margin_pool.append((i, qa_result['margin_ratio'][i]))
+            if len(margin_pool) == 10 or i + 1 == len(qa_result['first_lst']):
+                target = min(margin_pool, key=lambda x : x[1])[0]
+                m, created = Margin.objects.get_or_create(
+                    name=img_name[0:len(img_name)-4] + '_bbox_' + str(bbox_id+1) + '_magrin_' + str(target+1),
+                    bbox=b,
+                    margin_x = result['bboxes'][bbox_id][0] + qa_result['first_lst'][target],
+                    margin_y = result['bboxes'][bbox_id][1] + target,
+                    real_margin = qa_result['real_margin'],
+                    margin_ratio = qa_result['margin_ratio'][target]*100,
+                    margin_width = qa_result['last_lst'][target]-qa_result['first_lst'][target],
+                )
+                margin_pool = []
         
         total_min_ratio = min(total_min_ratio, qa_result['min_margin_ratio'])
     
