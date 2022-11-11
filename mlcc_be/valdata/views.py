@@ -43,18 +43,11 @@ def main(request):
             created_date__range=[today, today])
     if threshold is None:
         threshold = 85
-    # SELECT ... WHERE margin_ratio >= threshold
-    normal = queryset.filter(margin_ratio__gte=threshold)
-    # SELECT ... WHERE margin_ratio < threshold
-    error = queryset.filter(margin_ratio__lt=threshold)
-    normal = DataSerializer(normal, many=True, context={
+    queryset = DataSerializer(queryset, many=True, context={
                             'request': request}).data
-    error = DataSerializer(error, many=True, context={
-        'request': request}).data
     learning_status = State.objects.all()[0].progress
     result = {
-        "Normal": normal,
-        "Error": error,
+        "List": queryset,
         "Learning_Status": learning_status
     }
     return Response(result, headers={"description": "SUCCESS"})
