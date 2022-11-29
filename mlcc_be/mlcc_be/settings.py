@@ -254,7 +254,7 @@ CELERY_RESULT_SERIALIZER = 'json'
 
 CELERY_BEAT_SCHEDULE = {
     'get_result': {
-        'task': 'valdata.tasks.get_model_output',
+        'task': 'valdata.tasks.get_result',
         'schedule': timedelta(seconds=2),
         'args': ()
     },
