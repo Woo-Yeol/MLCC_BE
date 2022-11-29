@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from math import inf
 from PIL import Image
+import csv
 from datetime import datetime, date, timedelta
 from .models import Data, Bbox, Margin, ManualLog, State, InferencePath
 from django.conf import settings
@@ -134,6 +135,9 @@ def manual_get_result() -> None:
 # Create Data and Make File
 @transaction.atomic
 def save_result(i: int, result: dict, pc_name: str) -> None:
+    #추가
+    dt = datetime.now().strftime('%y%m%d_%H%M%S')
+    
     if Data.objects.filter(name = result['img_basename'][0:len(result['img_basename'])-4]).exists():
         return -1
     # set img url
@@ -148,6 +152,16 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
     s = np.array(result['seg_img'])
     cv2.imwrite(f"{img_dir}/{img_name[0:len(img_name)-4]}/{img_name}", r)
     cv2.imwrite(f"{img_dir}/{img_name[0:len(img_name)-4]}/{seg_name}", s)
+    
+    #추가 save inference image
+    for i in range (len(result['cropped_img_list'])):
+        r_cropped = np.array(result['cropped_img_list'][i])
+        s_cropped = np.array(result['cropped_seg_list'][i])
+        cv2.imwrite(f"D:\\dataset\\dataset_for_seg\\inferenced\\images\\{dt}_{i+1}.jpg", r_cropped)
+        cv2.imwrite(f"D:\\dataset\\dataset_for_seg\\inferenced\\annotations\\{dt}_{i+1}.jpg", s_cropped)
+
+
+
     # Create data
     d, created = Data.objects.get_or_create(
         name = img_name[0:len(img_name)-4],
@@ -161,9 +175,12 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
 
     total_min_ratio = inf
     assessment = 'OK'
+    input_dir_path = f"{model_root}/mlcc_datasets/smb"
+    f = open(f'{input_dir_path}/{pc_name}/results/temp.csv', 'w', newline='')
+    writer = csv.writer(f)
 
     for bbox_id, qa_result in enumerate(result['qa_result_list']):
-
+        csv_rows = []
         if qa_result['decision_result'] == False:
             assessment = 'NG'
         b, created = Bbox.objects.get_or_create(
@@ -180,26 +197,34 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
             margin_pool.append((i, qa_result['margin_ratio'][i]))
             if len(margin_pool) == 10 or i + 1 == len(qa_result['first_lst']):
                 target = min(margin_pool, key=lambda x : x[1])[0]
+                margin_x = result['bboxes'][bbox_id][0] + qa_result['first_lst'][target]
+                margin_y = result['bboxes'][bbox_id][1] + target
+                real_margin = qa_result['real_margin']
+                margin_ratio = qa_result['margin_ratio'][target]*100
+                margin_width = qa_result['last_lst'][target]-qa_result['first_lst'][target]
+                # Box id, id, 마진폭, 실마진, 마진율
+                csv_rows.append([f"{bbox_id+1}", f"{i // 10 + 1}", f"{margin_width}", f"{real_margin}", f"{margin_ratio}"])
                 m, created = Margin.objects.get_or_create(
                     name=img_name[0:len(img_name)-4] + '_bbox_' + str(bbox_id+1) + '_magrin_' + str(target+1),
                     bbox=b,
-                    margin_x = result['bboxes'][bbox_id][0] + qa_result['first_lst'][target],
-                    margin_y = result['bboxes'][bbox_id][1] + target,
-                    real_margin = qa_result['real_margin'],
-                    margin_ratio = qa_result['margin_ratio'][target]*100,
-                    margin_width = qa_result['last_lst'][target]-qa_result['first_lst'][target],
+                    margin_x = margin_x,
+                    margin_y = margin_y,
+                    real_margin = real_margin,
+                    margin_ratio = margin_ratio,
+                    margin_width = margin_width,
                 )
                 margin_pool = []
-        
+        margin_pool = [float(r[4]) for r in csv_rows]
+        csv_rows[0] += [f'{sum(margin_pool) / len(margin_pool)}', f'{min(margin_pool)}', f'{max(margin_pool)}']
+        # Box id, id, 마진폭, 실마진, 마진율, 평균마진율, 최소마진율, 최대마진율
+        writer.writerows(csv_rows)
         total_min_ratio = min(total_min_ratio, qa_result['min_margin_ratio'])
-    
+    f.close()
+    os.rename(f'{input_dir_path}/{pc_name}/results/temp.csv', f'{input_dir_path}/{pc_name}/results/{result["img_basename"][0:len(img_name)-4]}_{assessment}.csv')
     d.margin_ratio = total_min_ratio * 100
     d.save()
 
-    # Make save
-    input_dir_path = f"{model_root}/mlcc_datasets/smb"
-    f = open(f'{input_dir_path}/{pc_name}/results/{result["img_basename"]}_{assessment}.txt', 'w')
-    f.close()
+
     
 
 
