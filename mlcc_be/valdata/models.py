@@ -33,7 +33,7 @@ class Data(models.Model):
 class Bbox(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
     data = models.ForeignKey(
-        Data, on_delete=models.CASCADE, related_name='datas', null=True)
+        Data, on_delete=models.CASCADE, related_name='bbox', null=True)
     min_margin_ratio = models.FloatField(null=True, blank=True)
     box_x = models.IntegerField(null=True, blank=True)
     box_y = models.IntegerField(null=True, blank=True)
@@ -48,7 +48,7 @@ class Bbox(models.Model):
 class Margin(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
     bbox = models.ForeignKey(
-        Bbox, on_delete=models.CASCADE, related_name='bboxs', null=True)
+        Bbox, on_delete=models.CASCADE, related_name='margin', null=True)
     margin_x = models.IntegerField(null=True, blank=True)
     margin_y = models.IntegerField(null=True, blank=True)
     real_margin = models.FloatField(null=True, blank=True)
