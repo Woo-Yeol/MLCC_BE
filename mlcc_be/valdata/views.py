@@ -139,7 +139,6 @@ class ManualLogListView(ListCreateAPIView):
 @api_view(['GET'])
 def set_schedule(request):
     if request.method == 'GET':
-        #mode = getattr(tasks, 'system_mode')
         mode = State.objects.all()[0].mode
         return Response({"mode": mode})
 
@@ -147,7 +146,6 @@ def set_schedule(request):
 @api_view(['GET'])
 def set_thr(request):
     if request.method == 'GET':
-        #thr = int(getattr(tasks, 'threshold') * 100)
         thr = State.objects.all()[0].threshold * 100
         return Response({thr})
 

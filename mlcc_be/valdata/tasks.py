@@ -55,7 +55,7 @@ def set_input_dir(input_dir_path: str) -> str:
 def get_result() -> None:
     try:
         # 실행 경로 정하기
-        input_dir_path: str = f"{model_root}/mlcc_datasets/smb"
+        input_dir_path: str = f"{model_root}/smb"
         dt = datetime.now().strftime('%y%m%d_%H%M%S')
         pc_name = set_input_dir(input_dir_path)
         target_model = State.objects.all()[0].target_model
@@ -71,7 +71,7 @@ def get_result() -> None:
                 save_result(i, result, pc_name)
 
             # 3. DB 적재한 모델 원본 데이터 삭제
-            entries = os.scandir(f'{model_root}/mlcc_datasets/smb/{pc_name}/input')
+            entries = os.scandir(f'{model_root}/smb/{pc_name}/input')
             for entry in entries:
                 if not entry.is_dir():
                     os.remove(entry.path)
@@ -90,23 +90,25 @@ def get_result() -> None:
 @transaction.atomic
 def save_result(i: int, result: dict, pc_name: str) -> None:
     dt = datetime.now().strftime('%y%m%d_%H%M%S')
-    md = datetime.now().strftime('%m.%d')
+    ymd = datetime.now().strftime('%y%m%d')
     if Data.objects.filter(name=result['img_basename'][0:len(result['img_basename']) - 4]).exists():
         print("이미 존재하는 데이터입니다.")
         return -1
     # Set img url
     server_root = "D:"
-    img_name = result['img_basename']
-    folder_name = img_name[0:len(img_name) - 4]
-    seg_name = folder_name + '_seg.jpg'
-    img_dir = f"{server_root}/mlcc_datasets/smb/data/{md}"
+    img_name = ymd + '_' + result['img_basename']
+    data_name = img_name[0:len(img_name) - 4]
+    seg_name = data_name + '_seg.jpg'
+    img_dir = f"{server_root}/smb/data/{ymd}"
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
-    os.makedirs(f"{img_dir}/{folder_name}", exist_ok=True)
+        os.makedirs(img_dir + '/raw')
+        os.makedirs(img_dir + '/seg')
+    os.makedirs(f"{img_dir}/{data_name}", exist_ok=True)
     r = np.array(result['img0'])
     s = np.array(result['seg_img'])
-    cv2.imwrite(f"{img_dir}/{folder_name}/{img_name}", r)
-    cv2.imwrite(f"{img_dir}/{folder_name}/{seg_name}", s)
+    cv2.imwrite(f"{img_dir}/raw/{img_name}", r)
+    cv2.imwrite(f"{img_dir}/seg/{seg_name}", s)
 
     # inference image save
     for i in range(len(result['cropped_img_list'])):
@@ -117,10 +119,10 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
 
     # Create data
     d = Data.objects.create(
-        name=folder_name,
+        name=data_name,
         source_pc=pc_name,
-        original_image=f"{server_root}/mlcc_datasets/smb/data/{md}/{folder_name}/{img_name}",
-        segmentation_image=f"{server_root}/mlcc_datasets/smb/data/{md}/{folder_name}/{seg_name}",
+        original_image=f"{server_root}/smb/data/{ymd}/{data_name}/{img_name}",
+        segmentation_image=f"{server_root}/smb/data/{ymd}/{data_name}/{seg_name}",
         created_date=date.today(),
         margin_ratio=0,
         cvat_url=f'http://localhost:8080/tasks/1/jobs/1?frame={i}'
@@ -128,17 +130,18 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
 
     total_min_ratio = inf
     assessment = 'OK'
-    input_dir_path = f"{model_root}/mlcc_datasets/smb"
+    input_dir_path = f"{model_root}/smb"
     f = open(f'{input_dir_path}/{pc_name}/results/temp.csv', 'w', newline='')
     writer = csv.writer(f)
 
     for bbox_id, qa_result in enumerate(result['qa_result_list']):
+        writer.writerow(['BoxID', 'ID', '마진폭', '실마진', '마진률', '평균 마진률', '최소 마진률', '최대 마진률'])
         csv_rows = []
         if not qa_result['decision_result']:
             assessment = 'NG'
 
         b = d.bbox.create(
-            name=folder_name + '_bbox_' + str(bbox_id + 1),
+            name=data_name + '_bbox_' + str(bbox_id + 1),
             min_margin_ratio=qa_result['min_margin_ratio'] * 100,
             box_width=(result['bboxes'][bbox_id][2] - result['bboxes'][bbox_id][0]),
             box_height=(result['bboxes'][bbox_id][3] - result['bboxes'][bbox_id][1]),
@@ -159,7 +162,7 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
                 csv_rows.append(
                     [f"{bbox_id + 1}", f"{i // 10 + 1}", f"{margin_width}", f"{real_margin}", f"{margin_ratio}"])
                 m = b.margin.create(
-                    name=folder_name + '_bbox_' + str(bbox_id + 1) + '_magrin_' + str(target + 1),
+                    name=data_name + '_bbox_' + str(bbox_id + 1) + '_magrin_' + str(target + 1),
                     margin_x=margin_x,
                     margin_y=margin_y,
                     real_margin=real_margin,
@@ -186,7 +189,7 @@ def reset_data():
     log_list = ManualLog.objects.exclude(dt__gte=today)
     for log in log_list:
         log.delete()
-    input_dir_path = f"{model_root}/mlcc_datasets/smb"
+    input_dir_path = f"{model_root}/smb"
     for i in range(1, 6):
         path = f'{input_dir_path}/pc{i}'
         if os.path.exists(path):
