@@ -120,8 +120,8 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
     d = Data.objects.create(
         name=data_name,
         source_pc=pc_name,
-        original_image=f"{server_root}/smb/data/{ymd}/{data_name}/{img_name}",
-        segmentation_image=f"{server_root}/smb/data/{ymd}/{data_name}/{seg_name}",
+        original_image=f"{server_root}/smb/data/{ymd}/raw/{img_name}",
+        segmentation_image=f"{server_root}/smb/data/{ymd}/seg/{seg_name}",
         created_date=date.today(),
         margin_ratio=0,
         cvat_url=f'http://localhost:8080/tasks/1/jobs/1?frame={i}'
@@ -134,7 +134,7 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
     writer = csv.writer(f)
 
     for bbox_id, qa_result in enumerate(result['qa_result_list']):
-        writer.writerow(['BoxID', 'ID', '마진폭', '실마진', '마진률', '평균 마진률', '최소 마진률', '최대 마진률'])
+        writer.writerow(['Box ID', '행 ID', '마진폭', '실마진', '마진율', 'avg 마진율', 'min 마진율', 'max 마진율'])
         csv_rows = []
         if not qa_result['decision_result']:
             assessment = 'NG'
