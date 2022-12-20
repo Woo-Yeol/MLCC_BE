@@ -50,8 +50,9 @@ def set_input_dir(input_dir_path: str) -> str:
     return pc_name
 
 
-@shared_task
+
 @model_lock
+@shared_task
 def get_result() -> None:
     try:
         # 실행 경로 정하기
@@ -104,7 +105,6 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
         os.makedirs(img_dir)
         os.makedirs(img_dir + '/raw')
         os.makedirs(img_dir + '/seg')
-    os.makedirs(f"{img_dir}/{data_name}", exist_ok=True)
     r = np.array(result['img0'])
     s = np.array(result['seg_img'])
     cv2.imwrite(f"{img_dir}/raw/{img_name}", r)
@@ -116,13 +116,12 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
         s_cropped = np.array(result['cropped_seg_list'][i])
         cv2.imwrite(f"D:\\dataset\\dataset_for_seg\\inferenced\\images\\{dt}_{i + 1}.jpg", r_cropped)
         cv2.imwrite(f"D:\\dataset\\dataset_for_seg\\inferenced\\annotations\\{dt}_{i + 1}.jpg", s_cropped)
-
     # Create data
     d = Data.objects.create(
         name=data_name,
         source_pc=pc_name,
-        original_image=f"{server_root}/smb/data/{ymd}/{data_name}/{img_name}",
-        segmentation_image=f"{server_root}/smb/data/{ymd}/{data_name}/{seg_name}",
+        original_image=f"{server_root}/smb/data/{ymd}/raw/{img_name}",
+        segmentation_image=f"{server_root}/smb/data/{ymd}/seg/{seg_name}",
         created_date=date.today(),
         margin_ratio=0,
         cvat_url=f'http://localhost:8080/tasks/1/jobs/1?frame={i}'
@@ -135,7 +134,7 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
     writer = csv.writer(f)
 
     for bbox_id, qa_result in enumerate(result['qa_result_list']):
-        writer.writerow(['BoxID', 'ID', '마진폭', '실마진', '마진률', '평균 마진률', '최소 마진률', '최대 마진률'])
+        writer.writerow(['Box ID', '행 ID', '마진폭', '실마진', '마진율', 'avg 마진율', 'min 마진율', 'max 마진율'])
         csv_rows = []
         if not qa_result['decision_result']:
             assessment = 'NG'
@@ -177,7 +176,7 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
         total_min_ratio = min(total_min_ratio, qa_result['min_margin_ratio'])
     f.close()
     os.rename(f'{input_dir_path}/{pc_name}/results/temp.csv',
-              f'{input_dir_path}/{pc_name}/results/{result["img_basename"][0:len(img_name) - 4]}_{assessment}.csv')
+              f'{input_dir_path}/{pc_name}/results/{data_name}_{assessment}.csv')
     d.margin_ratio = total_min_ratio * 100
     d.save()
 
