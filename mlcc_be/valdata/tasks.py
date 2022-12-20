@@ -107,8 +107,8 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
         os.makedirs(img_dir + '/seg')
     r = np.array(result['img0'])
     s = np.array(result['seg_img'])
-    cv2.imwrite(f"{img_dir}/raw/{img_name}", r)
-    cv2.imwrite(f"{img_dir}/seg/{seg_name}", s)
+    cv2.imwrite(f"{img_dir}/raw/{img_name}_{pc_name}", r)
+    cv2.imwrite(f"{img_dir}/seg/{seg_name}_{pc_name}", s)
 
     # inference image save
     for i in range(len(result['cropped_img_list'])):
