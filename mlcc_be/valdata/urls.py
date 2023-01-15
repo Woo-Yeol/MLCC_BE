@@ -20,7 +20,8 @@ from django.conf.urls.static import static
 from .views import DataListView, BboxListView, MarginListView, DataRetrieveView,\
      BboxRetrieveView, MarginRetrieveView, ManualLogListView, \
     main, detail, self_train, set_schedule, set_thr, set_environment_variable, \
-        curr_inference_model, set_inference_model, eval_self_train, sample_img
+    det_model, seg_model, \
+    eval_self_train, det_sample_img, seg_sample_img, pid, reset
 
 
 urlpatterns = [
@@ -38,9 +39,12 @@ urlpatterns = [
     path('setting', set_environment_variable),
     path('learning', self_train),
     path('learning/eval', eval_self_train),
-    path('model', curr_inference_model),
-    path('model/sampleimg', sample_img),
-    path('model/<str:name>', set_inference_model),
+    path('model/detection', det_model),
+    path('model/segmentation', seg_model),
+    path('model/detection/sampleimg', det_sample_img),
+    path('model/segmentation/sampleimg', seg_sample_img),
+    path('pid', pid),
+    path('reset', reset)
     
     
     

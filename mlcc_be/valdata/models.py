@@ -12,7 +12,9 @@ class State(models.Model):
     threshold = models.FloatField(default=85)
     work = models.BooleanField(default=False)
     progress = models.IntegerField(default=100)
-    target_model = models.CharField(max_length=30, default='')
+    target_det_model = models.CharField(max_length=30, default='')
+    target_seg_model = models.CharField(max_length=30, default='')
+    pid = models.IntegerField(default=-1)
 
 
 class Data(models.Model):
@@ -23,6 +25,7 @@ class Data(models.Model):
     segmentation_image = models.ImageField(
         upload_to=data_directory_path, null=True, blank=True)
     margin_ratio = models.FloatField(null=True, blank=True)
+    created_datetime = models.DateTimeField(default=now())
     created_date = models.DateField(auto_now_add=True)
     cvat_url = models.URLField(null=True, blank=True)
 

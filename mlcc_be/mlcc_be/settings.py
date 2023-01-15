@@ -104,7 +104,15 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
     'mode',
     'threshold',
-    'token'
+    'token',
+    'Learning-Type',
+    'Segmentation-Data-Type',
+    'Segmentation-Learning-Rate',
+    'Segmentation-Iterations',
+    'Segmentation-Learning-Date',
+    'Detection-Learning-Rate',
+    'Detection-Epochs',
+    'Detection-Learning-Date',
 ]
 
 ############################################################################################################

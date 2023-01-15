@@ -10,6 +10,7 @@ sys.path.append("C:/Users/user/Desktop/IITP/mmcv_laminate_alignment_system")
 from mlcc_django import auto_run_model, manual_run_model
 from mlcc_systemkits.mlcc_system import MLCC_SYSTEM
 from celery import shared_task
+from django.utils.timezone import now
 
 running: bool = False
 results = []
@@ -59,16 +60,21 @@ def get_result() -> None:
         input_dir_path: str = f"{model_root}/smb"
         dt = datetime.now().strftime('%y%m%d_%H%M%S')
         pc_name = set_input_dir(input_dir_path)
-        target_model = State.objects.all()[0].target_model
-        if target_model == 'auto':
-            seg_cp_pth = InferencePath.objects.all().order_by("-acc")[0].path
+        target_det_model = State.objects.all()[0].target_det_model
+        target_seg_model = State.objects.all()[0].target_seg_model
+        if target_det_model == 'auto':
+            det_cp_pth = InferencePath.objects.filter(name__contains='det').order_by("-acc")[0].path
         else:
-            seg_cp_pth = InferencePath.objects.get(name=target_model).path
+            det_cp_pth = InferencePath.objects.get(name=target_det_model).path
+        if target_seg_model == 'auto':
+            seg_cp_pth = InferencePath.objects.filter(name__contains='seg').order_by("-acc")[0].path
+        else:
+            seg_cp_pth = InferencePath.objects.get(name=target_seg_model).path
 
         # 모델 실행 및 결과파일 생성
         if pc_name != '':
             threshold = State.objects.all()[0].threshold
-            for i, result in enumerate(auto_run_model(seg_cp_pth, dt, pc_name, threshold)):
+            for i, result in enumerate(auto_run_model(det_cp_pth, seg_cp_pth, dt, pc_name, threshold)):
                 save_result(i, result, pc_name)
 
             # 3. DB 적재한 모델 원본 데이터 삭제
@@ -105,11 +111,18 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
         os.makedirs(img_dir)
         os.makedirs(img_dir + '/raw')
         os.makedirs(img_dir + '/seg')
+    #    os.makedirs(img_dir + '/mask')
+
     r = np.array(result['img0'])
     s = np.array(result['seg_img'])
-    cv2.imwrite(f"{img_dir}/raw/{img_name}_{pc_name}", r)
-    cv2.imwrite(f"{img_dir}/seg/{seg_name}_{pc_name}", s)
+    #m = np.array(result['seg_mask'])
+    _img_name = f"{img_name.split('.')[0]}_{pc_name}.jpg"
+    _seg_name = f"{seg_name.split('.')[0]}_{pc_name}.jpg"
 
+    cv2.imwrite(f"{img_dir}/raw/{_img_name}", r)
+    cv2.imwrite(f"{img_dir}/seg/{_seg_name}", s)
+    #cv2.imwrite(f"{img_dir}/mask/{_img_name}", m)
+    
     # inference image save
     for i in range(len(result['cropped_img_list'])):
         r_cropped = np.array(result['cropped_img_list'][i])
@@ -118,11 +131,12 @@ def save_result(i: int, result: dict, pc_name: str) -> None:
         cv2.imwrite(f"D:\\dataset\\dataset_for_seg\\inferenced\\annotations\\{dt}_{i + 1}.jpg", s_cropped)
     # Create data
     d = Data.objects.create(
-        name=data_name,
+        name=f'{data_name}_{pc_name}',
         source_pc=pc_name,
-        original_image=f"{server_root}/smb/data/{ymd}/raw/{img_name}",
-        segmentation_image=f"{server_root}/smb/data/{ymd}/seg/{seg_name}",
+        original_image=f"{server_root}/smb/data/{ymd}/raw/{_img_name}",
+        segmentation_image=f"{server_root}/smb/data/{ymd}/seg/{_seg_name}",
         created_date=date.today(),
+        created_datetime=now(),
         margin_ratio=0,
         cvat_url=f'http://localhost:8080/tasks/1/jobs/1?frame={i}'
     )
